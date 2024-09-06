@@ -1,14 +1,19 @@
 package net.javaguides.order_service.controller;
 
+
+import net.javaguides.base_domains.dto.ApiResponse;
 import net.javaguides.base_domains.dto.order.OrderDTO;
+import net.javaguides.order_service.dto.StockDto;
+import net.javaguides.order_service.dto.UserDto;
+import net.javaguides.order_service.exception.OrderException;
+import net.javaguides.order_service.interceptor.FeignClientInterceptor;
+import net.javaguides.order_service.service.AuthenticationAPIClient;
 import net.javaguides.order_service.service.OrderService;
+import net.javaguides.order_service.service.StockAPIClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/order")
@@ -16,12 +21,43 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    @PostMapping()
-    public ResponseEntity<OrderDTO> placeOrder(@RequestBody OrderDTO order){
+    @Autowired
+    private AuthenticationAPIClient authenticationAPIClient;
+
+
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<?>> placeOrder(@RequestBody OrderDTO order) {
         try {
-            OrderDTO createOrder = orderService.placeOrder(order);
-            return new ResponseEntity<>(createOrder, HttpStatus.CREATED);
-        }catch(Exception e){
+            ApiResponse<UserDto> user = authenticationAPIClient.getCurrentUser().getBody();
+
+            if (user != null) {
+                OrderDTO createOrder = orderService.placeOrder(order, user.getData().getId());
+                ApiResponse<OrderDTO> response = new ApiResponse<>(createOrder, HttpStatus.CREATED.value());
+                return new ResponseEntity<>(response, HttpStatus.CREATED);
+            }
+
+            ApiResponse<String> response = new ApiResponse<>("User not found!", HttpStatus.NOT_FOUND.value());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (OrderException e) {
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), e.getStatus().value());
+            return new ResponseEntity<>(response, e.getStatus());
+        } catch (Exception e) {
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("{orderId}")
+    public ResponseEntity<OrderDTO> getOrderStatus(@RequestParam("orderId") String orderId) {
+        try {
+            OrderDTO existingOrder = orderService.checkOrderStatusByOrderId(orderId);
+            if (existingOrder != null) {
+                return new ResponseEntity<>(existingOrder, HttpStatus.OK);
+            }
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
