@@ -19,12 +19,12 @@ public class OrderConsumer {
     @KafkaListener(topics = "${spring.kafka.order-topic.name}",
             groupId = "${spring.kafka.consumer.group-id}")
     public void consume(OrderEvent orderEvent){
-//        try {
+        try {
             LOGGER.info(String.format("OrderDTO event received in stock service -> %s", orderEvent.toString()));
-//
-////            stockService.updateProductStock(orderEvent.getOrderDTO().getProductId(), orderEvent.getOrderDTO().getQty());
-//        }catch(Exception e){
-//           LOGGER.warn(String.format("Error message -> %s", e.getMessage()));
-//        }
+
+            stockService.updateProductStock(orderEvent);
+        }catch(Exception e){
+           LOGGER.warn(String.format("Error message -> %s", e.getMessage()));
+        }
     }
 }
