@@ -1,13 +1,15 @@
 package net.javaguides.product_service.controller;
 
+
+import net.javaguides.base_domains.dto.ApiResponse;
 import net.javaguides.base_domains.dto.product.ProductDTO;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("api/v1/products")
@@ -19,12 +21,48 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> saveProduct(@RequestBody ProductDTO productDTO){
+    public ResponseEntity<ApiResponse<?>> saveProduct(@RequestBody ProductDTO productDTO){
         try {
             ProductDTO createdProductDto = productService.saveProduct(productDTO);
-            return new ResponseEntity<>(createdProductDto, HttpStatus.CREATED);
+            ApiResponse<ProductDTO> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         }catch(Exception e){
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<?>> getProductList(){
+        try {
+            List<ProductDTO> productList = productService.getProductList();
+            ApiResponse<List<ProductDTO>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }catch(Exception e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);        }
+    }
+
+    @GetMapping("{id}")
+    public ResponseEntity<ApiResponse<?>> getProductById(@RequestParam("id") String id){
+        try {
+            ProductDTO productDTO = productService.getProductById(id);
+            ApiResponse<ProductDTO> apiResponse = new ApiResponse<>(productDTO, HttpStatus.OK.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }catch(Exception e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/products")
+    public ResponseEntity<ApiResponse<?>> getProductsByIds(@RequestParam("ids") Set<String> productIds) {
+        try {
+            List<ProductDTO> productDTOs = productService.getProductsByIds(productIds);
+            ApiResponse<List<ProductDTO>> apiResponse = new ApiResponse<>(productDTOs, HttpStatus.OK.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }catch(Exception e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

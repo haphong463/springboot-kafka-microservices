@@ -30,6 +30,4 @@ public class Product {
     private String imageUrl;
 
     private BigDecimal price;
-
-    private Integer stockQuantity;
 }
