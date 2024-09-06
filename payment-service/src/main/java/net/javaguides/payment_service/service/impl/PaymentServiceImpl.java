@@ -1,6 +1,7 @@
 package net.javaguides.payment_service.service.impl;
 
 import net.javaguides.base_domains.dto.order.OrderEvent;
+import net.javaguides.base_domains.dto.order.OrderItemDTO;
 import net.javaguides.payment_service.entity.Payment;
 import net.javaguides.payment_service.repository.PaymentRepository;
 import net.javaguides.payment_service.service.PaymentService;
@@ -22,7 +23,14 @@ public class PaymentServiceImpl implements PaymentService {
     public void createPayment(OrderEvent orderEvent) {
         Payment newPayment = new Payment();
         newPayment.setId(UUID.randomUUID().toString());
-        BigDecimal amount = BigDecimal.valueOf(orderEvent.getOrderDTO().getQty() * orderEvent.getOrderDTO().getPrice());
+
+        BigDecimal amount = BigDecimal.valueOf(0);
+
+        for (OrderItemDTO orderItemDTO : orderEvent.getOrderDTO().getOrderItems()) {
+            BigDecimal itemTotal = orderItemDTO.getPrice().multiply(BigDecimal.valueOf(orderItemDTO.getQuantity()));
+            amount = amount.add(itemTotal);
+        }
+
         newPayment.setAmount(amount);
         newPayment.setPaymentMethod("Paypal");
         newPayment.setOrderId(orderEvent.getOrderDTO().getOrderId());

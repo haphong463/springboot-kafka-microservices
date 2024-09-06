@@ -1,7 +1,6 @@
 package net.javaguides.payment_service.kafka;
 
 import net.javaguides.base_domains.dto.order.OrderEvent;
-import net.javaguides.payment_service.repository.PaymentRepository;
 import net.javaguides.payment_service.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
