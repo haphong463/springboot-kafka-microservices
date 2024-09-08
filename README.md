@@ -56,47 +56,16 @@ The Spring Boot Microservices Project is a distributed system designed to manage
 - MySQL Server
 
 ### Running Services
-1. **Service Registry**
-   - Navigate to the `service-registry` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
 
-2. **API Gateway**
-   - Navigate to the `api-gateway` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+Instead of starting each service individually, you can use the `start.bat` file to launch all services at once. Follow these steps:
 
-3. **Product Service**
-   - Navigate to the `product-service` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+1. **Configure MySQL**: Ensure that your MySQL Server is running and properly configured. Update the `application.properties` files in each service directory with your MySQL connection details.
 
-4. **Order Service**
-   - Navigate to the `order-service` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+2. **Configure Kafka**: Ensure that Kafka is running and properly configured. Update the `application.properties` or `application.yml` files in each service directory with your Kafka connection details.
 
-5. **Stock Service**
-   - Navigate to the `stock-service` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
-
-6. **Identity Service**
-   - Navigate to the `identity-service` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
-
-7. **Payment Service**
-   - Navigate to the `payment-service` directory and run:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+3. **Run All Services**:
+   - Navigate to the root directory of the project (where `start.bat` is located).
+   - Double-click `start.bat` to start all services simultaneously.
 
 ### Configuration
 
