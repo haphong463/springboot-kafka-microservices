@@ -74,7 +74,7 @@ Instead of starting each service individually, you can use the `start.bat` file 
 
 ## Testing 🔍
 
-- Access the API Gateway at `http://localhost:8080` to interact with the services.
+- Access the API Gateway at `http://localhost:9191` to interact with the services.
 - Use tools like Postman to make HTTP requests to the service endpoints.
 
 ## Documentation 📚
