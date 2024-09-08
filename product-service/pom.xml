@@ -33,9 +33,9 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>net.javaguides</groupId>
-			<artifactId>base-domains</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<groupId>io.github.haphong463</groupId>
+			<artifactId>common-lib</artifactId>
+			<version>1.0.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.modelmapper/modelmapper -->
 		<dependency>
@@ -50,6 +50,10 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

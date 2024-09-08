@@ -1,9 +1,9 @@
 package net.javaguides.stock_service.kafka;
 
 
-import net.javaguides.base_domains.dto.ApiResponse;
-import net.javaguides.base_domains.dto.product.ProductDTO;
-import net.javaguides.base_domains.dto.product.ProductEvent;
+import io.github.haphong463.dto.ApiResponse;
+import io.github.haphong463.dto.product.ProductDTO;
+import io.github.haphong463.dto.product.ProductEvent;
 import net.javaguides.stock_service.service.ProductAPIClient;
 import net.javaguides.stock_service.service.StockService;
 import org.slf4j.Logger;

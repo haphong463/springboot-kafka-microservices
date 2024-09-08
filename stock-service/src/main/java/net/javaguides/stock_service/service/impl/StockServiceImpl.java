@@ -1,7 +1,7 @@
 package net.javaguides.stock_service.service.impl;
-import net.javaguides.base_domains.dto.order.OrderEvent;
-import net.javaguides.base_domains.dto.order.OrderItemDTO;
-import net.javaguides.base_domains.dto.product.ProductEvent;
+import io.github.haphong463.dto.order.OrderEvent;
+import io.github.haphong463.dto.order.OrderItemDTO;
+import io.github.haphong463.dto.product.ProductEvent;
 import net.javaguides.stock_service.entity.Stock;
 import net.javaguides.stock_service.repository.StockRepository;
 import net.javaguides.stock_service.service.StockService;
@@ -31,7 +31,7 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public void updateProductStock(OrderEvent orderEvent) {
+    public void updateStockBasedOrder(OrderEvent orderEvent) {
         // Lấy danh sách các productId và số lượng tương ứng từ đơn hàng
         Map<String, Integer> productQuantityMap = orderEvent.getOrderDTO().getOrderItems().stream()
                 .collect(Collectors.toMap(OrderItemDTO::getProductId, OrderItemDTO::getQuantity, Integer::sum));
@@ -63,5 +63,16 @@ public class StockServiceImpl implements StockService {
     @Override
     public List<Stock> getProductsStock(Set<String> productIds) {
         return stockRepository.findAllByProductIdIn(productIds);
+    }
+
+    @Override
+    public Stock updateStockQuantity(String productId, int quantity) {
+        Stock stock = stockRepository.findByProductId(productId);
+        if(stock != null){
+            stock.setQty(stock.getQty() + quantity);
+            stockRepository.save(stock);
+            return stock;
+        }
+        return null;
     }
 }

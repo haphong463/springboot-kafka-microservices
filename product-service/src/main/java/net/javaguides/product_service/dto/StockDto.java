@@ -1,5 +1,4 @@
-package net.javaguides.base_domains.dto.product;
-
+package net.javaguides.product_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductEvent {
-    private ProductDTO productDTO;
+public class StockDto {
+    private String productId;
+    private int qty;
 }

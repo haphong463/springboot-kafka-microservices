@@ -1,6 +1,7 @@
 package net.javaguides.identity_service.controller;
 
-import net.javaguides.base_domains.dto.ApiResponse;
+
+import io.github.haphong463.dto.ApiResponse;
 import net.javaguides.identity_service.annotation.CurrentUser;
 import net.javaguides.identity_service.dto.AuthRequest;
 import net.javaguides.identity_service.dto.UserDto;

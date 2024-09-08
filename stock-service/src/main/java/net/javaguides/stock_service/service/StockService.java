@@ -1,8 +1,9 @@
 package net.javaguides.stock_service.service;
 
 
-import net.javaguides.base_domains.dto.order.OrderEvent;
-import net.javaguides.base_domains.dto.product.ProductEvent;
+
+import io.github.haphong463.dto.order.OrderEvent;
+import io.github.haphong463.dto.product.ProductEvent;
 import net.javaguides.stock_service.entity.Stock;
 
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 public interface StockService {
     void createProductStock(ProductEvent productEvent);
-    void updateProductStock(OrderEvent orderEvent);
+    void updateStockBasedOrder(OrderEvent orderEvent);
     List<Stock> getProductsStock(Set<String> productIds);
+    Stock updateStockQuantity(String productId, int quantity);
 }

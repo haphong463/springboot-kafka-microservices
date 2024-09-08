@@ -8,23 +8,29 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="stock-service" />
-        <module name="base-domains" />
         <module name="payment-service" />
-        <module name="email-service" />
         <module name="api-gateway" />
         <module name="product-service" />
         <module name="order-service" />
+        <module name="identity-service" />
+        <module name="service-registry" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="base-domains" target="17" />
+      <module name="email-service" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="base-domains" options="-parameters" />
       <module name="email-service" options="-parameters" />
+      <module name="identity-service" options="-parameters" />
       <module name="order-service" options="-parameters" />
       <module name="payment-service" options="-parameters" />
       <module name="product-service" options="-parameters" />
+      <module name="service-registry" options="-parameters" />
       <module name="stock-service" options="-parameters" />
     </option>
   </component>

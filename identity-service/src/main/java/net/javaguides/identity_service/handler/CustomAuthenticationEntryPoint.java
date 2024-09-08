@@ -1,9 +1,9 @@
 package net.javaguides.identity_service.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.haphong463.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import net.javaguides.base_domains.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;

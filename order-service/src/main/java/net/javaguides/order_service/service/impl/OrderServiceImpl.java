@@ -1,11 +1,11 @@
 package net.javaguides.order_service.service.impl;
 
 
-import net.javaguides.base_domains.dto.ApiResponse;
-import net.javaguides.base_domains.dto.order.OrderDTO;
-import net.javaguides.base_domains.dto.order.OrderEvent;
-import net.javaguides.base_domains.dto.order.OrderItemDTO;
-import net.javaguides.base_domains.dto.product.ProductDTO;
+import io.github.haphong463.dto.ApiResponse;
+import io.github.haphong463.dto.order.OrderDTO;
+import io.github.haphong463.dto.order.OrderEvent;
+import io.github.haphong463.dto.order.OrderItemDTO;
+import io.github.haphong463.dto.product.ProductDTO;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;

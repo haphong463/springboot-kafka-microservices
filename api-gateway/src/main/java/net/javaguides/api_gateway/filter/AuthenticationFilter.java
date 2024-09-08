@@ -1,8 +1,8 @@
 package net.javaguides.api_gateway.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.haphong463.dto.ApiResponse;
 import net.javaguides.api_gateway.util.JwtUtil;
-import net.javaguides.base_domains.dto.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;

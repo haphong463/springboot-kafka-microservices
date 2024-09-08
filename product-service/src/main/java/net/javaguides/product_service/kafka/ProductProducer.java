@@ -1,6 +1,7 @@
 package net.javaguides.product_service.kafka;
 
-import net.javaguides.base_domains.dto.product.ProductEvent;
+import io.github.haphong463.dto.product.ProductEvent;
+
 import org.apache.kafka.clients.admin.NewTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

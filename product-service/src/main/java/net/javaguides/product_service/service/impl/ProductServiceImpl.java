@@ -1,13 +1,18 @@
 package net.javaguides.product_service.service.impl;
 
-import net.javaguides.base_domains.dto.product.ProductDTO;
-import net.javaguides.base_domains.dto.product.ProductEvent;
+
+import io.github.haphong463.dto.product.ProductDTO;
+import io.github.haphong463.dto.product.ProductEvent;
+import net.javaguides.product_service.dto.ProductStockResponse;
+import net.javaguides.product_service.dto.StockDto;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.kafka.ProductProducer;
 import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.ProductService;
+import net.javaguides.product_service.service.StockAPIClient;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +22,15 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
-    private ProductProducer productProducer;
-    private ProductRepository productRepository;
-    private ModelMapper modelMapper;
+    private final ProductProducer productProducer;
+    private final ProductRepository productRepository;
+    private final StockAPIClient stockAPIClient;
+    private final ModelMapper modelMapper;
 
-    public ProductServiceImpl(ProductProducer productProducer, ProductRepository productRepository, ModelMapper modelMapper) {
+    public ProductServiceImpl(ProductProducer productProducer, ProductRepository productRepository, StockAPIClient stockAPIClient, ModelMapper modelMapper) {
         this.productProducer = productProducer;
         this.productRepository = productRepository;
+        this.stockAPIClient = stockAPIClient;
         this.modelMapper = modelMapper;
     }
 
@@ -54,12 +61,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductDTO> getProductList() {
-        return productRepository.findAll()
+    public List<ProductStockResponse> getProductList() {
+        List<ProductDTO> products = productRepository.findAll()
                 .stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
+                .toList();
+
+        Set<String> productIds = products
+                .stream()
+                .map(ProductDTO::getId)
+                .collect(Collectors.toSet());
+
+        List<StockDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
+
+        return products.stream()
+                .map(product -> {
+                    StockDto stock = stockList.stream()
+                            .filter(s -> s.getProductId().equals(product.getId()))
+                            .findFirst()
+                            .orElse(null);
+
+                    ProductStockResponse response = new ProductStockResponse();
+                    response.setProduct(product);
+                    response.setStock(stock);
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
+
 
     @Override
     public ProductDTO updateProduct(String id, ProductDTO productDTO) {

@@ -1,8 +1,10 @@
 package net.javaguides.product_service.controller;
 
 
-import net.javaguides.base_domains.dto.ApiResponse;
-import net.javaguides.base_domains.dto.product.ProductDTO;
+
+import io.github.haphong463.dto.ApiResponse;
+import io.github.haphong463.dto.product.ProductDTO;
+import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,8 +36,8 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<?>> getProductList(){
         try {
-            List<ProductDTO> productList = productService.getProductList();
-            ApiResponse<List<ProductDTO>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
+            List<ProductStockResponse> productList = productService.getProductList();
+            ApiResponse<List<ProductStockResponse>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         }catch(Exception e){
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());

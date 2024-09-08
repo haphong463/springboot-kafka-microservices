@@ -1,8 +1,8 @@
 package net.javaguides.order_service.controller;
 
 
-import net.javaguides.base_domains.dto.ApiResponse;
-import net.javaguides.base_domains.dto.order.OrderDTO;
+import io.github.haphong463.dto.ApiResponse;
+import io.github.haphong463.dto.order.OrderDTO;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.dto.UserDto;
 import net.javaguides.order_service.exception.OrderException;
@@ -18,12 +18,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("api/v1/order")
 public class OrderController {
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
+    private final AuthenticationAPIClient authenticationAPIClient;
 
-    @Autowired
-    private AuthenticationAPIClient authenticationAPIClient;
-
+    public OrderController(OrderService orderService, AuthenticationAPIClient authenticationAPIClient) {
+        this.orderService = orderService;
+        this.authenticationAPIClient = authenticationAPIClient;
+    }
 
 
     @PostMapping

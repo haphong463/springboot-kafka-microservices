@@ -1,6 +1,7 @@
 package net.javaguides.stock_service.kafka;
 
-import net.javaguides.base_domains.dto.order.OrderEvent;
+
+import io.github.haphong463.dto.order.OrderEvent;
 import net.javaguides.stock_service.service.StockService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public class OrderConsumer {
         try {
             LOGGER.info(String.format("OrderDTO event received in stock service -> %s", orderEvent.toString()));
 
-            stockService.updateProductStock(orderEvent);
+            stockService.updateStockBasedOrder(orderEvent);
         }catch(Exception e){
            LOGGER.warn(String.format("Error message -> %s", e.getMessage()));
         }
