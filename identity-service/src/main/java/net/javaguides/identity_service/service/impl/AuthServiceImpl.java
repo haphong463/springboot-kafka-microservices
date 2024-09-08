@@ -1,9 +1,11 @@
 package net.javaguides.identity_service.service.impl;
 
 import net.javaguides.identity_service.entity.UserCredential;
+import net.javaguides.identity_service.exception.AuthException;
 import net.javaguides.identity_service.repository.UserCredentialRepository;
 import net.javaguides.identity_service.service.AuthService;
 import net.javaguides.identity_service.service.JwtService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String saveUser(UserCredential userCredential) {
+        boolean existingUsername = checkExistingUsername(userCredential.getName());
+        if(existingUsername){
+            throw new AuthException("Username already exists in the database!", HttpStatus.BAD_REQUEST);
+        }
+
         userCredential.setPassword(passwordEncoder.encode(userCredential.getPassword()));
         userCredentialRepository.save(userCredential);
         return "user added to the system";
@@ -34,5 +41,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void validateToken(String token) {
         jwtService.validateToken(token);
+    }
+
+    private boolean checkExistingUsername(String username){
+        return userCredentialRepository.findByName(username).isPresent();
     }
 }

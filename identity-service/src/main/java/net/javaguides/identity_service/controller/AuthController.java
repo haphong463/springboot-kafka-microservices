@@ -6,6 +6,7 @@ import net.javaguides.identity_service.annotation.CurrentUser;
 import net.javaguides.identity_service.dto.AuthRequest;
 import net.javaguides.identity_service.dto.UserDto;
 import net.javaguides.identity_service.entity.UserCredential;
+import net.javaguides.identity_service.exception.AuthException;
 import net.javaguides.identity_service.service.AuthService;
 import net.javaguides.identity_service.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String addNewUser(@RequestBody UserCredential userCredential) {
-        return authService.saveUser(userCredential);
+    public ResponseEntity<ApiResponse<String>> addNewUser(@RequestBody UserCredential userCredential) {
+        try {
+            String message = authService.saveUser(userCredential);
+            ApiResponse<String> apiResponse = new ApiResponse<>(message, HttpStatus.CREATED.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
+        }
+        catch(AuthException e){
+            ApiResponse<String> apiResponse = new ApiResponse<>(e.getMessage(), e.getStatus().value());
+            return new ResponseEntity<>(apiResponse, e.getStatus());
+        }
+        catch(Exception e){
+            ApiResponse<String> apiResponse = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/token")
