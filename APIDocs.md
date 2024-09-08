@@ -1,23 +1,35 @@
+
 # Identity Service API Documentation 🧑‍💻
 
 ## Base URL: `http://localhost:9191`
 
 ## Authentication Endpoints 🛡️
+
+### 1. **User Login**
 - **Example**:
-  ```
-  curl -X POST http://localhost:9191/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"user123","password":"password123"}'
+  ```bash
+  curl -X POST http://localhost:9191/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user123","password":"password123"}'
   ```
 
 ---
 
 ### 2. **User Registration**
 - **Example**:
+  ```bash
+  curl -X POST http://localhost:9191/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user123","email":"user123@example.com","password":"password123"}'
   ```
-  curl -X POST http://localhost:9191/api/v1/auth/register -H "Content-Type: application/json" -d '{"name":"user123","email":"user123@example.com","password":"password123"}'
-  ```
-# Order Service
 
-### 1. Place Order
+---
+
+# Order Service 📦
+
+## Base URL: `http://localhost:9191/api/v1/order`
+
+### 1. **Place Order**
 
 ```bash
 curl -X POST http://localhost:9191/api/v1/order \
@@ -25,28 +37,32 @@ curl -X POST http://localhost:9191/api/v1/order \
 -H "Authorization: Bearer <JWT_TOKEN>" \
 -d '{
     "orderItems": [
-        {{
+        {
             "productId": "0c0e9912-969e-4141-b3c0-7efb2b3be8e7",
             "quantity": 1
-        }},
-        {{
+        },
+        {
             "productId": "768aee20-dd48-4458-88bd-07bfff726e27",
             "quantity": 1
-        }}
+        }
     ]
 }'
 ```
 
-### 2. Get Order Details
+### 2. **Get Order Details**
 
 ```bash
 curl -X GET http://localhost:9191/api/v1/order/{orderId} \
 -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
-## Product Service
+---
 
-### 1. Create Product
+# Product Service 🛒
+
+## Base URL: `http://localhost:9191/api/v1/products`
+
+### 1. **Create Product**
 
 ```bash
 curl -X POST http://localhost:9191/api/v1/products \
@@ -61,7 +77,7 @@ curl -X POST http://localhost:9191/api/v1/products \
 }'
 ```
 
-### 2. Get Product Details
+### 2. **Get Product Details**
 
 ```bash
 curl -X GET http://localhost:9191/api/v1/products/{productId} \
