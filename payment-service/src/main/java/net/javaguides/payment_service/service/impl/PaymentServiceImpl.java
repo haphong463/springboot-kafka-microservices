@@ -1,7 +1,7 @@
 package net.javaguides.payment_service.service.impl;
 
-import io.github.haphong463.dto.order.OrderEvent;
-import io.github.haphong463.dto.order.OrderItemDTO;
+import net.javaguides.common_lib.dto.order.OrderEvent;
+import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.payment_service.entity.Payment;
 import net.javaguides.payment_service.repository.PaymentRepository;
 import net.javaguides.payment_service.service.PaymentService;

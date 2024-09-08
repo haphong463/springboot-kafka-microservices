@@ -1,7 +1,7 @@
 package net.javaguides.stock_service.controller;
 
 
-import io.github.haphong463.dto.ApiResponse;
+import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.stock_service.dto.StockUpdateRequest;
 import net.javaguides.stock_service.entity.Stock;
 import net.javaguides.stock_service.service.StockService;

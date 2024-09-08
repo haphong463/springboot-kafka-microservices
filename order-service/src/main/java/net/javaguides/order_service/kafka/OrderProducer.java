@@ -1,6 +1,6 @@
 package net.javaguides.order_service.kafka;
 
-import io.github.haphong463.dto.order.OrderEvent;
+import net.javaguides.common_lib.dto.order.OrderEvent;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

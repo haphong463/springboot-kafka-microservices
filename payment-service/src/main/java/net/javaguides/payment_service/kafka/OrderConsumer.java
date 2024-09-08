@@ -1,7 +1,7 @@
 package net.javaguides.payment_service.kafka;
 
 
-import io.github.haphong463.dto.order.OrderEvent;
+import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.payment_service.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

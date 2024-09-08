@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>io.github.haphong463</groupId>
 			<artifactId>common-lib</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.4</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.modelmapper/modelmapper -->
 		<dependency>

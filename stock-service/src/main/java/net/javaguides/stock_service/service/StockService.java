@@ -2,8 +2,8 @@ package net.javaguides.stock_service.service;
 
 
 
-import io.github.haphong463.dto.order.OrderEvent;
-import io.github.haphong463.dto.product.ProductEvent;
+import net.javaguides.common_lib.dto.order.OrderEvent;
+import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.stock_service.entity.Stock;
 
 import java.util.List;

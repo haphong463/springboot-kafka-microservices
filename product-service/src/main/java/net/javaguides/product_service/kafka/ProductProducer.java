@@ -1,6 +1,6 @@
 package net.javaguides.product_service.kafka;
 
-import io.github.haphong463.dto.product.ProductEvent;
+import net.javaguides.common_lib.dto.product.ProductEvent;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.slf4j.Logger;

@@ -2,7 +2,7 @@ package net.javaguides.product_service.service;
 
 
 
-import io.github.haphong463.dto.product.ProductDTO;
+import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.product_service.dto.ProductStockResponse;
 
 import java.util.List;

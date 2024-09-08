@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="central-bundle">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Desktop/common-lib/target/central-publishing/central-bundle.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

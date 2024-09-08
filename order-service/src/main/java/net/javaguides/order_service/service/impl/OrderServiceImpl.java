@@ -1,11 +1,12 @@
 package net.javaguides.order_service.service.impl;
 
 
-import io.github.haphong463.dto.ApiResponse;
-import io.github.haphong463.dto.order.OrderDTO;
-import io.github.haphong463.dto.order.OrderEvent;
-import io.github.haphong463.dto.order.OrderItemDTO;
-import io.github.haphong463.dto.product.ProductDTO;
+import net.javaguides.common_lib.dto.ApiResponse;
+import net.javaguides.common_lib.dto.order.OrderDTO;
+import net.javaguides.common_lib.dto.order.OrderEvent;
+import net.javaguides.common_lib.dto.order.OrderItemDTO;
+import net.javaguides.common_lib.dto.product.ProductDTO;
+import net.javaguides.order_service.dto.OrderRequestDto;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;
@@ -45,8 +46,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDTO placeOrder(OrderDTO orderDTO, Long userId) {
+    public OrderDTO placeOrder(OrderRequestDto orderDTO, Long userId) {
         try {
+            OrderDTO newOrder = modelMapper.map(orderDTO, OrderDTO.class);
             // get the list of productIds from orderItems
             Set<String> productIds = orderDTO.getOrderItems()
                     .stream()
@@ -55,6 +57,7 @@ public class OrderServiceImpl implements OrderService {
 
             // call the API to get stock and product information in a single request
             List<StockDto> stockDtos = stockAPIClient.getProductsStock(productIds).getBody();
+
             ApiResponse<List<ProductDTO>> productDTOs = productAPIClient.getProductsByIds(productIds).getBody();
 
             // check stock and set product price for each orderItem
@@ -83,11 +86,11 @@ public class OrderServiceImpl implements OrderService {
             }
 
             // Set a unique ID for the order
-            orderDTO.setOrderId(UUID.randomUUID().toString());
-            orderDTO.setUserId(userId);
+            newOrder.setOrderId(UUID.randomUUID().toString());
+            newOrder.setUserId(userId);
 
             // Map the DTO to the Order entity
-            Order order = modelMapper.map(orderDTO, Order.class);
+            Order order = modelMapper.map(newOrder, Order.class);
 
             // Set the order reference in each order item
             for (OrderItem orderItem : order.getOrderItems()) {

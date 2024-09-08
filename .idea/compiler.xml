@@ -12,6 +12,7 @@
         <module name="api-gateway" />
         <module name="product-service" />
         <module name="order-service" />
+        <module name="common-lib" />
         <module name="identity-service" />
         <module name="service-registry" />
       </profile>
@@ -25,6 +26,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="base-domains" options="-parameters" />
+      <module name="common-lib" options="" />
       <module name="email-service" options="-parameters" />
       <module name="identity-service" options="-parameters" />
       <module name="order-service" options="-parameters" />

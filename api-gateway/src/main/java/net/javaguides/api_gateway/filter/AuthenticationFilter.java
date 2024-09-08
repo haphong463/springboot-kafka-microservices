@@ -1,14 +1,16 @@
 package net.javaguides.api_gateway.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.haphong463.dto.ApiResponse;
 import net.javaguides.api_gateway.util.JwtUtil;
+import net.javaguides.common_lib.dto.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;

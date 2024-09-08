@@ -1,6 +1,5 @@
 package net.javaguides.order_service.service;
-
-import io.github.haphong463.dto.ApiResponse;
+import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.order_service.dto.UserDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;

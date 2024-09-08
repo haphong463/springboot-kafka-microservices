@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="1.0.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Desktop/common-lib/target/central-staging/io/github/haphong463/common-lib/1.0.2/common-lib-1.0.2-javadoc.jar!/" />
+      <root url="jar://$USER_HOME$/Desktop/common-lib/target/central-staging/io/github/haphong463/common-lib/1.0.2/common-lib-1.0.2-sources.jar!/" />
+      <root url="jar://$USER_HOME$/Desktop/common-lib/target/central-staging/io/github/haphong463/common-lib/1.0.2/common-lib-1.0.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

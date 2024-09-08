@@ -2,8 +2,8 @@ package net.javaguides.product_service.controller;
 
 
 
-import io.github.haphong463.dto.ApiResponse;
-import io.github.haphong463.dto.product.ProductDTO;
+import net.javaguides.common_lib.dto.ApiResponse;
+import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.http.HttpStatus;
@@ -45,7 +45,7 @@ public class ProductController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<ApiResponse<?>> getProductById(@RequestParam("id") String id){
+    public ResponseEntity<ApiResponse<?>> getProductById(@PathVariable("id") String id){
         try {
             ProductDTO productDTO = productService.getProductById(id);
             ApiResponse<ProductDTO> apiResponse = new ApiResponse<>(productDTO, HttpStatus.OK.value());

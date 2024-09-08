@@ -1,8 +1,8 @@
 package net.javaguides.stock_service.service;
 
 
-import io.github.haphong463.dto.ApiResponse;
-import io.github.haphong463.dto.product.ProductDTO;
+import net.javaguides.common_lib.dto.ApiResponse;
+import net.javaguides.common_lib.dto.product.ProductDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,8 +1,8 @@
 package net.javaguides.product_service.service.impl;
 
 
-import io.github.haphong463.dto.product.ProductDTO;
-import io.github.haphong463.dto.product.ProductEvent;
+import net.javaguides.common_lib.dto.product.ProductDTO;
+import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.dto.StockDto;
 import net.javaguides.product_service.entity.Product;
@@ -41,8 +41,11 @@ public class ProductServiceImpl implements ProductService {
             product.setId(UUID.randomUUID().toString());
             Product savedProduct = productRepository.save(product);
 
-            ProductEvent productEvent = createProductEvent(savedProduct);
+            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
+            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
 
+            ProductEvent productEvent = createProductEvent(savedProduct);
+            productEvent.setProductDTO(savedProductDto);
             productProducer.sendMessage(productEvent);
 
             return modelMapper.map(savedProduct, ProductDTO.class);

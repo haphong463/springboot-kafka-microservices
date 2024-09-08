@@ -1,8 +1,10 @@
 package net.javaguides.order_service.controller;
 
 
-import io.github.haphong463.dto.ApiResponse;
-import io.github.haphong463.dto.order.OrderDTO;
+
+import net.javaguides.common_lib.dto.ApiResponse;
+import net.javaguides.common_lib.dto.order.OrderDTO;
+import net.javaguides.order_service.dto.OrderRequestDto;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.dto.UserDto;
 import net.javaguides.order_service.exception.OrderException;
@@ -28,11 +30,11 @@ public class OrderController {
 
 
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> placeOrder(@RequestBody OrderDTO order) {
+    public ResponseEntity<ApiResponse<?>> placeOrder(@RequestBody OrderRequestDto order) {
         try {
             ApiResponse<UserDto> user = authenticationAPIClient.getCurrentUser().getBody();
 
-            if (user != null) {
+            if (user != null && user.getData() != null) {
                 OrderDTO createOrder = orderService.placeOrder(order, user.getData().getId());
                 ApiResponse<OrderDTO> response = new ApiResponse<>(createOrder, HttpStatus.CREATED.value());
                 return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -51,15 +53,18 @@ public class OrderController {
 
 
     @GetMapping("{orderId}")
-    public ResponseEntity<OrderDTO> getOrderStatus(@RequestParam("orderId") String orderId) {
+    public ResponseEntity<ApiResponse<?>> getOrderStatus(@PathVariable("orderId") String orderId) {
         try {
             OrderDTO existingOrder = orderService.checkOrderStatusByOrderId(orderId);
+
             if (existingOrder != null) {
-                return new ResponseEntity<>(existingOrder, HttpStatus.OK);
+                ApiResponse<OrderDTO> response = new ApiResponse<>(existingOrder, HttpStatus.OK.value());
+                return new ResponseEntity<>(response, HttpStatus.OK);
             }
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);        }
     }
 }

@@ -1,9 +1,10 @@
 package net.javaguides.order_service.service;
 
 
-import io.github.haphong463.dto.order.OrderDTO;
+import net.javaguides.common_lib.dto.order.OrderDTO;
+import net.javaguides.order_service.dto.OrderRequestDto;
 
 public interface OrderService {
-    OrderDTO placeOrder(OrderDTO order, Long userId);
+    OrderDTO placeOrder(OrderRequestDto order, Long userId);
     OrderDTO checkOrderStatusByOrderId(String orderId);
 }
