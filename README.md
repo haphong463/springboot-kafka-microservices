@@ -52,8 +52,7 @@ The Spring Boot Microservices Project is a distributed system designed to manage
 ## Setup
 
 ### Requirements
-- JDK 11 or higher
-- Docker (for running services in containers)
+- JDK 17 or higher
 - MySQL Server
 
 ### Running Services
