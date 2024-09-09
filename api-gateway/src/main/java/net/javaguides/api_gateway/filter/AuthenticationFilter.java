@@ -33,31 +33,64 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         super(Config.class);
     }
 
+//    @Override
+//    public GatewayFilter apply(Config config) {
+//        return (exchange, chain) -> {
+//            if (routeValidator.isSecured.test(exchange.getRequest())) {
+//                // Kiểm tra xem header có chứa token không
+//                if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+//                    return this.onError(exchange, "Missing authorization header", HttpStatus.UNAUTHORIZED);
+//                }
+//
+//                String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+//                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+//                    authHeader = authHeader.substring(7);
+//                } else {
+//                    return this.onError(exchange, "Invalid authorization header format", HttpStatus.UNAUTHORIZED);
+//                }
+//
+//                try {
+//                    // Kiểm tra tính hợp lệ của token
+//                    jwtUtil.validateToken(authHeader);
+//                } catch (Exception e) {
+//                    return this.onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
+//                }
+//            }
+//            return chain.filter(exchange);
+//        };
+//    }
+
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             if (routeValidator.isSecured.test(exchange.getRequest())) {
-                // Kiểm tra xem header có chứa token không
-                if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                    return this.onError(exchange, "Missing authorization header", HttpStatus.UNAUTHORIZED);
+                // Kiểm tra xem request có chứa cookie không
+                HttpHeaders headers = exchange.getRequest().getHeaders();
+                if (!headers.containsKey(HttpHeaders.COOKIE)) {
+                    return this.onError(exchange, "Missing cookies", HttpStatus.UNAUTHORIZED);
                 }
 
-                String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                    authHeader = authHeader.substring(7);
-                } else {
-                    return this.onError(exchange, "Invalid authorization header format", HttpStatus.UNAUTHORIZED);
+                // Lấy token từ cookie
+                String token = extractTokenFromCookies(exchange.getRequest());
+                if (token == null) {
+                    return this.onError(exchange, "Missing or invalid token in cookies", HttpStatus.UNAUTHORIZED);
                 }
 
                 try {
                     // Kiểm tra tính hợp lệ của token
-                    jwtUtil.validateToken(authHeader);
+                    jwtUtil.validateToken(token);
                 } catch (Exception e) {
                     return this.onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
                 }
             }
             return chain.filter(exchange);
         };
+    }
+
+
+    private String extractTokenFromCookies(ServerHttpRequest request) {
+        return request.getCookies().getFirst("token") != null ?
+                request.getCookies().getFirst("token").getValue() : null;
     }
 
     // Hàm để trả về phản hồi lỗi tùy chỉnh

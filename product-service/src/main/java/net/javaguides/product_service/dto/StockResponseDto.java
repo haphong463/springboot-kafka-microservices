@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class StockDto {
+public class StockResponseDto {
     private String productId;
     private int qty;
 }
