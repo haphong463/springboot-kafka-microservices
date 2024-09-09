@@ -1,6 +1,9 @@
 package net.javaguides.identity_service.controller;
 
 
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.identity_service.annotation.CurrentUser;
 import net.javaguides.identity_service.dto.AuthRequest;
@@ -49,11 +52,18 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public ResponseEntity<ApiResponse<String>> getToken(@RequestBody AuthRequest authRequest) {
+    public ResponseEntity<ApiResponse<String>> getToken(@RequestBody AuthRequest authRequest, HttpServletResponse response) {
         try {
             Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
             if (authenticate.isAuthenticated()) {
                 String generateToken = authService.generateToken(authRequest.getUsername());
+
+                Cookie cookie = new Cookie("token", generateToken);
+                cookie.setHttpOnly(true);
+                cookie.setPath("/");
+                cookie.setMaxAge(7 * 24 * 60 * 60);
+                response.addCookie(cookie);
+
                 ApiResponse<String> apiResponse = new ApiResponse<>(generateToken, HttpStatus.OK.value());
                 return new ResponseEntity<>(apiResponse, HttpStatus.OK);
             } else {
