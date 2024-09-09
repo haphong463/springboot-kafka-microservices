@@ -66,6 +66,11 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
+    public Stock getProductStock(String productId) {
+        return stockRepository.findByProductId(productId);
+    }
+
+    @Override
     public Stock updateStockQuantity(String productId, int quantity) {
         Stock stock = stockRepository.findByProductId(productId);
         if(stock != null){

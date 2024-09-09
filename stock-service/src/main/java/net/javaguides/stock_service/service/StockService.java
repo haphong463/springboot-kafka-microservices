@@ -13,5 +13,6 @@ public interface StockService {
     void createProductStock(ProductEvent productEvent);
     void updateStockBasedOrder(OrderEvent orderEvent);
     List<Stock> getProductsStock(Set<String> productIds);
+    Stock getProductStock(String productId);
     Stock updateStockQuantity(String productId, int quantity);
 }

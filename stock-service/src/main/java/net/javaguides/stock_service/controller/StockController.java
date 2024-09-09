@@ -30,6 +30,18 @@ public class StockController {
         }
     }
 
+    @GetMapping("{productId}")
+    public ResponseEntity<ApiResponse<?>> getProductStock(@PathVariable("productId") String productId){
+        try {
+            Stock stock = stockService.getProductStock(productId);
+            ApiResponse<Stock> apiResponse = new ApiResponse<>(stock, HttpStatus.OK.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }catch(Exception e){
+            ApiResponse<String> apiResponse = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PatchMapping("/update/{productId}")
     public ResponseEntity<ApiResponse<?>> updateStockQuantity(
             @PathVariable("productId") String productId,
