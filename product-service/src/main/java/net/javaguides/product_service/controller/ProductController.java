@@ -25,8 +25,8 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ApiResponse<?>> saveProduct(@RequestBody ProductDTO productDTO){
         try {
-            ProductDTO createdProductDto = productService.saveProduct(productDTO);
-            ApiResponse<ProductDTO> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
+            ProductStockResponse createdProductDto = productService.saveProduct(productDTO);
+            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         }catch(Exception e){
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());

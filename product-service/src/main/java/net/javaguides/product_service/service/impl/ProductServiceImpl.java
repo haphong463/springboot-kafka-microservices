@@ -3,8 +3,9 @@ package net.javaguides.product_service.service.impl;
 
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
+import net.javaguides.product_service.dto.ProductResponseDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
-import net.javaguides.product_service.dto.StockDto;
+import net.javaguides.product_service.dto.StockResponseDto;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.kafka.ProductProducer;
@@ -12,7 +13,6 @@ import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.ProductService;
 import net.javaguides.product_service.service.StockAPIClient;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,12 +35,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO saveProduct(ProductDTO productDTO) {
+    public ProductStockResponse saveProduct(ProductDTO productDTO) {
         try {
             Product product = modelMapper.map(productDTO, Product.class);
             product.setId(UUID.randomUUID().toString());
             Product savedProduct = productRepository.save(product);
 
+            // Cập nhật thông tin tồn kho vào DTO sản phẩm
             ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
             savedProductDto.setStockQuantity(productDTO.getStockQuantity());
 
@@ -48,8 +49,16 @@ public class ProductServiceImpl implements ProductService {
             productEvent.setProductDTO(savedProductDto);
             productProducer.sendMessage(productEvent);
 
-            return modelMapper.map(savedProduct, ProductDTO.class);
-        }catch(Exception e){
+            ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
+            StockResponseDto stockResponseDto = new StockResponseDto();
+            stockResponseDto.setQty(productDTO.getStockQuantity());
+
+            ProductStockResponse productStockResponse = new ProductStockResponse();
+            productStockResponse.setProduct(productResponseDto);
+            productStockResponse.setStock(stockResponseDto);
+
+            return productStockResponse;
+        } catch (Exception e) {
             throw new ProductException("Failed to create product: " + e.getMessage(), e);
         }
     }
@@ -65,21 +74,21 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductStockResponse> getProductList() {
-        List<ProductDTO> products = productRepository.findAll()
+        List<ProductResponseDto> products = productRepository.findAll()
                 .stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(product -> modelMapper.map(product, ProductResponseDto.class))
                 .toList();
 
         Set<String> productIds = products
                 .stream()
-                .map(ProductDTO::getId)
+                .map(ProductResponseDto::getId)
                 .collect(Collectors.toSet());
 
-        List<StockDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
+        List<StockResponseDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
 
         return products.stream()
                 .map(product -> {
-                    StockDto stock = stockList.stream()
+                    StockResponseDto stock = stockList.stream()
                             .filter(s -> s.getProductId().equals(product.getId()))
                             .findFirst()
                             .orElse(null);

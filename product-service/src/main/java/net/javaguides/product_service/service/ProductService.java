@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface ProductService {
-    ProductDTO saveProduct(ProductDTO productDTO);
+    ProductStockResponse saveProduct(ProductDTO productDTO);
     ProductDTO getProductById(String id);
     List<ProductStockResponse> getProductList();
     ProductDTO updateProduct(String id, ProductDTO productDTO);
