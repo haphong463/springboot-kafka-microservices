@@ -32,4 +32,11 @@ public class ProductProducer {
                 .build();
         kafkaTemplate.send(message);
     }
+
+    public void sendDeleteProductMessage(String id){
+        Message<String> message = MessageBuilder.withPayload(id)
+                        .setHeader(KafkaHeaders.TOPIC, topic.name())
+                                .build();
+        kafkaTemplate.send(message);
+    }
 }

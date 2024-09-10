@@ -56,6 +56,33 @@ public class ProductController {
         }
     }
 
+    @PutMapping("/update/{id}")
+    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductDTO productDTO){
+        try {
+            ProductStockResponse productStockResponse = productService.updateProduct(id, productDTO);
+            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }catch(Exception e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("{id}")
+    public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable("id") String id){
+        try {
+            ProductDTO productDTO = productService.deleteProduct(id);
+            if(productDTO != null){
+                return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
+            }
+            ApiResponse<String> response = new ApiResponse<>("Product not found with ID: " + id, HttpStatus.NOT_FOUND.value());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        }catch(Exception e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<?>> getProductsByIds(@RequestParam("ids") Set<String> productIds) {
         try {

@@ -103,12 +103,45 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public ProductDTO updateProduct(String id, ProductDTO productDTO) {
-        return null;
+    public ProductStockResponse updateProduct(String id, ProductDTO productDTO) {
+        Product existingProduct = productRepository.findById(id).orElse(null);
+        if(existingProduct != null){
+            existingProduct.setName(productDTO.getName());
+            existingProduct.setPrice(productDTO.getPrice());
+            existingProduct.setDescription(productDTO.getDescription());
+            existingProduct.setImageUrl(productDTO.getImageUrl());
+
+            Product savedProduct = productRepository.save(existingProduct);
+
+            // Cập nhật thông tin tồn kho vào DTO sản phẩm
+//            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
+//            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
+//
+//            ProductEvent productEvent = createProductEvent(savedProduct);
+//            productEvent.setProductDTO(savedProductDto);
+//            productProducer.sendMessage(productEvent);
+
+            ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
+            StockResponseDto stockResponseDto = new StockResponseDto();
+            stockResponseDto.setQty(productDTO.getStockQuantity());
+
+            ProductStockResponse productStockResponse = new ProductStockResponse();
+            productStockResponse.setProduct(productResponseDto);
+            productStockResponse.setStock(stockResponseDto);
+
+            return productStockResponse;
+        }
+     return null;
     }
 
     @Override
-    public ProductDTO deleteProduct(String id) {
+    public ProductDTO deleteProduct(String id)
+    {
+        Product product = productRepository.findById(id).orElse(null);
+        if(product != null){
+            productRepository.delete(product);
+            productProducer.sendDeleteProductMessage(product.getId());
+        }
         return null;
     }
 
