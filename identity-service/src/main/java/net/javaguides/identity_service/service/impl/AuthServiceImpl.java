@@ -1,5 +1,7 @@
 package net.javaguides.identity_service.service.impl;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import net.javaguides.identity_service.entity.UserCredential;
 import net.javaguides.identity_service.exception.AuthException;
 import net.javaguides.identity_service.repository.UserCredentialRepository;
@@ -34,8 +36,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String generateToken(String username) {
-        return jwtService.generateToken(username);
+    public String generateToken(String username, HttpServletResponse response) {
+        String token = jwtService.generateToken(username);
+
+        Cookie cookie = new Cookie("token", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(30 * 60);
+        response.addCookie(cookie);
+        return token;
     }
 
     @Override

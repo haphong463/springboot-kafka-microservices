@@ -56,13 +56,7 @@ public class AuthController {
         try {
             Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
             if (authenticate.isAuthenticated()) {
-                String generateToken = authService.generateToken(authRequest.getUsername());
-
-                Cookie cookie = new Cookie("token", generateToken);
-                cookie.setHttpOnly(true);
-                cookie.setPath("/");
-                cookie.setMaxAge(7 * 24 * 60 * 60);
-                response.addCookie(cookie);
+                String generateToken = authService.generateToken(authRequest.getUsername(), response);
 
                 ApiResponse<String> apiResponse = new ApiResponse<>(generateToken, HttpStatus.OK.value());
                 return new ResponseEntity<>(apiResponse, HttpStatus.OK);
