@@ -80,4 +80,18 @@ public class StockServiceImpl implements StockService {
         }
         return null;
     }
+
+    @Override
+    public void deleteProductStock(String productId) {
+        try {
+            Stock stock = stockRepository.findByProductId(productId);
+           if(stock != null) {
+               stockRepository.delete(stock);
+               return;
+           }
+            throw new Exception("Not found stock for productId: " + productId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

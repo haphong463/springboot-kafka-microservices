@@ -8,5 +8,6 @@ import java.util.Set;
 
 public interface StockRepository extends JpaRepository<Stock, Long> {
     Stock findByProductId(String productId);
+
     List<Stock> findAllByProductIdIn(Set<String> productIds);
 }
