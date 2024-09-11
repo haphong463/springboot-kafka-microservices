@@ -49,8 +49,8 @@ public class ProductController {
     @GetMapping("{id}")
     public ResponseEntity<ApiResponse<?>> getProductById(@PathVariable("id") String id) {
         try {
-            ProductDTO productDTO = productService.getProductById(id);
-            ApiResponse<ProductDTO> apiResponse = new ApiResponse<>(productDTO, HttpStatus.OK.value());
+            ProductStockResponse productStockResponse = productService.getProductById(id);
+            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (ProductException e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), e.getStatus().value());

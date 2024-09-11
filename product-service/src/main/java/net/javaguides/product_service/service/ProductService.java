@@ -11,7 +11,7 @@ import java.util.Set;
 
 public interface ProductService {
     ProductStockResponse saveProduct(ProductDTO productDTO);
-    ProductDTO getProductById(String id);
+    ProductStockResponse getProductById(String id);
     List<ProductStockResponse> getProductList();
     ProductStockResponse updateProduct(String id, ProductDTO productDTO);
     ProductDTO deleteProduct(String id);

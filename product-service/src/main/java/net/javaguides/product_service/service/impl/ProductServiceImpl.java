@@ -1,6 +1,7 @@
 package net.javaguides.product_service.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
@@ -48,9 +49,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO getProductById(String id) {
+    public ProductStockResponse getProductById(String id) {
+        ApiResponse<StockResponseDto> stock = stockAPIClient.getProductStock(id).getBody();
+
         return productRepository.findById(id)
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(product -> {
+                        ProductResponseDto productResponseDto = modelMapper.map(product, ProductResponseDto.class);
+
+                        ProductStockResponse productStockResponse = new ProductStockResponse();
+                    productStockResponse.setStock(stock.getData());
+                    productStockResponse.setProduct(productResponseDto);
+                    return productStockResponse;
+                })
                 .orElseThrow(() -> new ProductException("Not found product!", HttpStatus.NOT_FOUND));
     }
 
