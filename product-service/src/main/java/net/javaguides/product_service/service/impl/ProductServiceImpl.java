@@ -116,16 +116,18 @@ public class ProductServiceImpl implements ProductService {
             Product savedProduct = productRepository.save(existingProduct);
 
             // Cập nhật thông tin tồn kho vào DTO sản phẩm
-//            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
-//            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
-//
-//            ProductEvent productEvent = createProductEvent(savedProduct);
-//            productEvent.setProductDTO(savedProductDto);
-//            productProducer.sendMessage(productEvent);
+            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
+            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
+
+            ProductEvent productEvent = createProductEvent(savedProduct);
+            productEvent.setProductDTO(savedProductDto);
+            productEvent.setMethod(ProductMethod.UPDATE);
+            productProducer.sendMessage(productEvent);
 
             ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
             StockResponseDto stockResponseDto = new StockResponseDto();
             stockResponseDto.setQty(productDTO.getStockQuantity());
+            stockResponseDto.setProductId(productDTO.getId());
 
             ProductStockResponse productStockResponse = new ProductStockResponse();
             productStockResponse.setProduct(productResponseDto);
