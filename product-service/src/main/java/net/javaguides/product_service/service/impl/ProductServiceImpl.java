@@ -3,6 +3,7 @@ package net.javaguides.product_service.service.impl;
 
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
+import net.javaguides.common_lib.dto.product.ProductMethod;
 import net.javaguides.product_service.dto.ProductResponseDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.dto.StockResponseDto;
@@ -47,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
 
             ProductEvent productEvent = createProductEvent(savedProduct);
             productEvent.setProductDTO(savedProductDto);
+            productEvent.setMethod(ProductMethod.CREATE);
             productProducer.sendMessage(productEvent);
 
             ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
@@ -139,8 +141,15 @@ public class ProductServiceImpl implements ProductService {
     {
         Product product = productRepository.findById(id).orElse(null);
         if(product != null){
+            ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+
+            ProductEvent productEvent = new ProductEvent();
+            productEvent.setProductDTO(productDTO);
+            productEvent.setMethod(ProductMethod.DELETE);
+
+            productProducer.sendDeleteProductMessage(productEvent);
             productRepository.delete(product);
-            productProducer.sendDeleteProductMessage(product.getId());
+            return productDTO;
         }
         return null;
     }
