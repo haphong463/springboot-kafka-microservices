@@ -6,6 +6,7 @@ import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.product_service.dto.ProductStockResponse;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ProductService {

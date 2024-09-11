@@ -1,11 +1,18 @@
 package net.javaguides.product_service.exception;
 
+import org.springframework.http.HttpStatus;
+
 public class ProductException extends  RuntimeException {
-    public ProductException(String message){
+    private HttpStatus status;
+
+    public ProductException(String message, HttpStatus status){
         super(message);
+        this.status = status;
     }
 
-    public ProductException(String message, Throwable cause){
-        super(message, cause);
+    public HttpStatus getStatus() {
+        return status;
     }
+
+
 }

@@ -1,6 +1,6 @@
 package net.javaguides.product_service.service.impl;
 
-
+import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
@@ -14,160 +14,146 @@ import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.ProductService;
 import net.javaguides.product_service.service.StockAPIClient;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductProducer productProducer;
     private final ProductRepository productRepository;
     private final StockAPIClient stockAPIClient;
     private final ModelMapper modelMapper;
 
-    public ProductServiceImpl(ProductProducer productProducer, ProductRepository productRepository, StockAPIClient stockAPIClient, ModelMapper modelMapper) {
-        this.productProducer = productProducer;
-        this.productRepository = productRepository;
-        this.stockAPIClient = stockAPIClient;
-        this.modelMapper = modelMapper;
-    }
-
     @Override
     public ProductStockResponse saveProduct(ProductDTO productDTO) {
         try {
-            Product product = modelMapper.map(productDTO, Product.class);
+            Product product = mapToEntity(productDTO);
             product.setId(UUID.randomUUID().toString());
+
             Product savedProduct = productRepository.save(product);
-
-            // Cập nhật thông tin tồn kho vào DTO sản phẩm
-            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
-            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
-
-            ProductEvent productEvent = createProductEvent(savedProduct);
-            productEvent.setProductDTO(savedProductDto);
-            productEvent.setMethod(ProductMethod.CREATE);
+            ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
             productProducer.sendMessage(productEvent);
 
-            ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
-            StockResponseDto stockResponseDto = new StockResponseDto();
-            stockResponseDto.setQty(productDTO.getStockQuantity());
-
-            ProductStockResponse productStockResponse = new ProductStockResponse();
-            productStockResponse.setProduct(productResponseDto);
-            productStockResponse.setStock(stockResponseDto);
-
-            return productStockResponse;
+            return buildProductStockResponse(savedProduct, productDTO.getStockQuantity());
         } catch (Exception e) {
-            throw new ProductException("Failed to create product: " + e.getMessage(), e);
+            throw new ProductException("Failed to create product: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
     public ProductDTO getProductById(String id) {
-        Product existingProduct = productRepository.findById(id).orElse(null);
-        if(existingProduct != null){
-            return modelMapper.map(existingProduct, ProductDTO.class);
-        }
-        return null;
+        return productRepository.findById(id)
+                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .orElseThrow(() -> new ProductException("Not found product!", HttpStatus.NOT_FOUND));
     }
 
     @Override
     public List<ProductStockResponse> getProductList() {
-        List<ProductResponseDto> products = productRepository.findAll()
+        List<ProductResponseDto> productDtos = productRepository.findAll()
                 .stream()
                 .map(product -> modelMapper.map(product, ProductResponseDto.class))
                 .toList();
 
-        Set<String> productIds = products
-                .stream()
+        Set<String> productIds = productDtos.stream()
                 .map(ProductResponseDto::getId)
                 .collect(Collectors.toSet());
 
         List<StockResponseDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
 
-        return products.stream()
-                .map(product -> {
+        return productDtos.stream()
+                .map(productDto -> {
                     StockResponseDto stock = stockList.stream()
-                            .filter(s -> s.getProductId().equals(product.getId()))
+                            .filter(s -> s.getProductId().equals(productDto.getId()))
                             .findFirst()
-                            .orElse(null);
-
-                    ProductStockResponse response = new ProductStockResponse();
-                    response.setProduct(product);
-                    response.setStock(stock);
-                    return response;
+                            .orElse(new StockResponseDto());
+                    return buildProductStockResponse(productDto, stock);
                 })
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public ProductStockResponse updateProduct(String id, ProductDTO productDTO) {
-        Product existingProduct = productRepository.findById(id).orElse(null);
-        if(existingProduct != null){
-            existingProduct.setName(productDTO.getName());
-            existingProduct.setPrice(productDTO.getPrice());
-            existingProduct.setDescription(productDTO.getDescription());
-            existingProduct.setImageUrl(productDTO.getImageUrl());
-
-            Product savedProduct = productRepository.save(existingProduct);
-
-            // Cập nhật thông tin tồn kho vào DTO sản phẩm
-            ProductDTO savedProductDto = modelMapper.map(savedProduct, ProductDTO.class);
-            savedProductDto.setStockQuantity(productDTO.getStockQuantity());
-
-            ProductEvent productEvent = createProductEvent(savedProduct);
-            productEvent.setProductDTO(savedProductDto);
-            productEvent.setMethod(ProductMethod.UPDATE);
-            productProducer.sendMessage(productEvent);
-
-            ProductResponseDto productResponseDto = modelMapper.map(savedProduct, ProductResponseDto.class);
-            StockResponseDto stockResponseDto = new StockResponseDto();
-            stockResponseDto.setQty(productDTO.getStockQuantity());
-            stockResponseDto.setProductId(productDTO.getId());
-
-            ProductStockResponse productStockResponse = new ProductStockResponse();
-            productStockResponse.setProduct(productResponseDto);
-            productStockResponse.setStock(stockResponseDto);
-
-            return productStockResponse;
-        }
-     return null;
+        return productRepository.findById(id)
+                .map(existingProduct -> updateAndSaveProduct(existingProduct, productDTO))
+                .orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
-    public ProductDTO deleteProduct(String id)
-    {
-        Product product = productRepository.findById(id).orElse(null);
-        if(product != null){
-            ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
-
-            ProductEvent productEvent = new ProductEvent();
-            productEvent.setProductDTO(productDTO);
-            productEvent.setMethod(ProductMethod.DELETE);
-
-            productProducer.sendDeleteProductMessage(productEvent);
-            productRepository.delete(product);
-            return productDTO;
-        }
-        return null;
+    public ProductDTO deleteProduct(String id) {
+        return productRepository.findById(id)
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+                    ProductEvent productEvent = createProductEvent(productDTO, ProductMethod.DELETE);
+                    productProducer.sendDeleteProductMessage(productEvent);
+                    productRepository.delete(product);
+                    return productDTO;
+                }).orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
     public List<ProductDTO> getProductsByIds(Set<String> productIds) {
-        return productRepository.findAllByIdIn(productIds).
-                stream()
+        return productRepository.findAllByIdIn(productIds)
+                .stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .collect(Collectors.toList());
     }
 
-    private ProductEvent createProductEvent(Product createdProduct) {
-        ProductDTO createdProductDto = modelMapper.map(createdProduct, ProductDTO.class);
-        ProductEvent orderEvent = new ProductEvent();
-        orderEvent.setProductDTO(createdProductDto);
-        return orderEvent;
+    // Private Helper Methods
+    private Product mapToEntity(ProductDTO productDTO) {
+        return modelMapper.map(productDTO, Product.class);
+    }
+
+    private ProductEvent createProductEvent(Product product, int stockQuantity, ProductMethod method) {
+        ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+        productDTO.setStockQuantity(stockQuantity);
+
+        ProductEvent productEvent = new ProductEvent();
+        productEvent.setProductDTO(productDTO);
+        productEvent.setMethod(method);
+        return productEvent;
+    }
+
+    private ProductEvent createProductEvent(ProductDTO productDTO, ProductMethod method) {
+        ProductEvent productEvent = new ProductEvent();
+        productEvent.setProductDTO(productDTO);
+        productEvent.setMethod(method);
+        return productEvent;
+    }
+
+    private ProductStockResponse buildProductStockResponse(Product product, int stockQuantity) {
+        ProductResponseDto productResponseDto = modelMapper.map(product, ProductResponseDto.class);
+        StockResponseDto stockResponseDto = new StockResponseDto( product.getId(), stockQuantity);
+
+        ProductStockResponse productStockResponse = new ProductStockResponse();
+        productStockResponse.setProduct(productResponseDto);
+        productStockResponse.setStock(stockResponseDto);
+        return productStockResponse;
+    }
+
+    private ProductStockResponse buildProductStockResponse(ProductResponseDto productDto, StockResponseDto stockDto) {
+        ProductStockResponse response = new ProductStockResponse();
+        response.setProduct(productDto);
+        response.setStock(stockDto);
+        return response;
+    }
+
+    private ProductStockResponse updateAndSaveProduct(Product existingProduct, ProductDTO productDTO) {
+        existingProduct.setName(productDTO.getName());
+        existingProduct.setPrice(productDTO.getPrice());
+        existingProduct.setDescription(productDTO.getDescription());
+        existingProduct.setImageUrl(productDTO.getImageUrl());
+
+        Product savedProduct = productRepository.save(existingProduct);
+        ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.UPDATE);
+        productProducer.sendMessage(productEvent);
+
+        return buildProductStockResponse(savedProduct, productDTO.getStockQuantity());
     }
 }
