@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class ProductEvent {
     private ProductDTO productDTO;
+    private ProductMethod method;
 }
