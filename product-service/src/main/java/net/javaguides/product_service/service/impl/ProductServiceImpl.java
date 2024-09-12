@@ -7,6 +7,7 @@ import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
 import net.javaguides.product_service.dto.ProductResponseDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
+import net.javaguides.product_service.dto.ProductUpdateDto;
 import net.javaguides.product_service.dto.StockResponseDto;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
@@ -89,11 +90,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductStockResponse updateProduct(String id, ProductDTO productDTO) {
+    public ProductStockResponse updateProduct(String id, ProductDTO productDTO, int version) {
         return productRepository.findById(id)
-                .map(existingProduct -> updateAndSaveProduct(existingProduct, productDTO))
+                .map(existingProduct -> {
+                    if (existingProduct.getVersion() != version) {
+                        throw new ProductException("Version conflict! Current version: "
+                                + existingProduct.getVersion(), HttpStatus.CONFLICT);
+                    }
+                    return updateAndSaveProduct(existingProduct, productDTO);
+                })
                 .orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
     }
+
 
     @Override
     public ProductDTO deleteProduct(String id) {
@@ -155,10 +163,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductStockResponse updateAndSaveProduct(Product existingProduct, ProductDTO productDTO) {
-        existingProduct.setName(productDTO.getName());
-        existingProduct.setPrice(productDTO.getPrice());
-        existingProduct.setDescription(productDTO.getDescription());
-        existingProduct.setImageUrl(productDTO.getImageUrl());
+        ProductUpdateDto productUpdateDto = modelMapper.map(productDTO, ProductUpdateDto.class);
+        modelMapper.map(productUpdateDto, existingProduct);
 
         Product savedProduct = productRepository.save(existingProduct);
         ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.UPDATE);

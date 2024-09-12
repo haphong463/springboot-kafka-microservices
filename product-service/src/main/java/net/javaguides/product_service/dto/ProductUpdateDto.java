@@ -4,16 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductResponseDto {
-    private String id;
+public class ProductUpdateDto {
     private String name;
+    private double price;
     private String description;
     private String imageUrl;
-    private BigDecimal price;
-    private int version;
 }
+

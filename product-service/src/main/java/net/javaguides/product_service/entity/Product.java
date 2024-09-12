@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.javaguides.common_lib.entity.AbstractEntity;
 
 import java.math.BigDecimal;
 
@@ -17,10 +18,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Product {
+public class Product extends AbstractEntity {
     @Id
     private String id;
 
+    @Column(nullable = false)
     private String name;
 
     @Column(columnDefinition = "LONGTEXT")
@@ -29,5 +31,6 @@ public class Product {
     @Column(columnDefinition = "LONGTEXT")
     private String imageUrl;
 
+    @Column(nullable = false)
     private BigDecimal price;
 }

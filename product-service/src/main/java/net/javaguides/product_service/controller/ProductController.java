@@ -1,11 +1,15 @@
 package net.javaguides.product_service.controller;
 
 
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,15 +19,11 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("api/v1/products")
+@RequiredArgsConstructor
 public class ProductController {
-    private ProductService productService;
-
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
-
+    private final ProductService productService;
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> saveProduct(@RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ApiResponse<?>> saveProduct(@RequestBody @Valid ProductDTO productDTO) {
         try {
             ProductStockResponse createdProductDto = productService.saveProduct(productDTO);
             ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
@@ -62,12 +62,17 @@ public class ProductController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductDTO productDTO, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
         try {
-            ProductStockResponse productStockResponse = productService.updateProduct(id, productDTO);
+            ProductStockResponse productStockResponse = productService.updateProduct(id, productDTO, version);
             ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
-        } catch (Exception e) {
+        }
+        catch(OptimisticLockException e){
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.CONFLICT.value());
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
+        catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }

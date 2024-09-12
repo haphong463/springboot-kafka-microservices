@@ -13,7 +13,7 @@ public interface ProductService {
     ProductStockResponse saveProduct(ProductDTO productDTO);
     ProductStockResponse getProductById(String id);
     List<ProductStockResponse> getProductList();
-    ProductStockResponse updateProduct(String id, ProductDTO productDTO);
+    ProductStockResponse updateProduct(String id, ProductDTO productDTO, int version);
     ProductDTO deleteProduct(String id);
     List<ProductDTO> getProductsByIds(Set<String> productIds);
 }
