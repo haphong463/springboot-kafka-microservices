@@ -1,6 +1,7 @@
 package net.javaguides.order_service.service.impl;
 
 
+import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.order.OrderDTO;
 import net.javaguides.common_lib.dto.order.OrderEvent;
@@ -10,12 +11,14 @@ import net.javaguides.order_service.dto.OrderRequestDto;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;
+import net.javaguides.order_service.entity.OrderStatus;
 import net.javaguides.order_service.exception.OrderException;
 import net.javaguides.order_service.kafka.OrderProducer;
 import net.javaguides.order_service.repository.OrderRepository;
 import net.javaguides.order_service.service.OrderService;
 import net.javaguides.order_service.service.ProductAPIClient;
 import net.javaguides.order_service.service.StockAPIClient;
+import net.javaguides.order_service.service.state.OrderContext;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private static final Logger LOGGER = LoggerFactory.getLogger(OrderServiceImpl.class);
 
@@ -37,32 +41,22 @@ public class OrderServiceImpl implements OrderService {
     private final StockAPIClient stockAPIClient;
     private final ProductAPIClient productAPIClient;
 
-    public OrderServiceImpl(OrderProducer orderProducer, OrderRepository orderRepository, ModelMapper modelMapper, StockAPIClient stockAPIClient, ProductAPIClient productAPIClient) {
-        this.orderProducer = orderProducer;
-        this.orderRepository = orderRepository;
-        this.modelMapper = modelMapper;
-        this.stockAPIClient = stockAPIClient;
-        this.productAPIClient = productAPIClient;
-    }
-
     @Override
     public OrderDTO placeOrder(OrderRequestDto orderDTO, Long userId) {
         try {
             OrderDTO newOrder = modelMapper.map(orderDTO, OrderDTO.class);
-            // get the list of productIds from orderItems
+
             Set<String> productIds = orderDTO.getOrderItems()
                     .stream()
                     .map(OrderItemDTO::getProductId)
                     .collect(Collectors.toSet());
 
-            // call the API to get stock and product information in a single request
             List<StockDto> stockDtos = stockAPIClient.getProductsStock(productIds).getBody();
 
             ApiResponse<List<ProductDTO>> productDTOs = productAPIClient.getProductsByIds(productIds).getBody();
 
-            // check stock and set product price for each orderItem
             for (OrderItemDTO orderItemDTO : orderDTO.getOrderItems()) {
-                // Get product information from productDTOs
+
                 assert productDTOs != null;
                 ProductDTO productDTO = productDTOs.getData().stream()
                         .filter(product -> product.getId().equals(orderItemDTO.getProductId()))
@@ -81,38 +75,30 @@ public class OrderServiceImpl implements OrderService {
                     throw new OrderException(errorMessage, HttpStatus.BAD_REQUEST);
                 }
 
-                // set product price from ProductDTO into orderItemDTO
                 orderItemDTO.setPrice(productDTO.getPrice());
             }
 
-            // Set a unique ID for the order
             newOrder.setOrderId(UUID.randomUUID().toString());
             newOrder.setUserId(userId);
 
-            // Map the DTO to the Order entity
             Order order = modelMapper.map(newOrder, Order.class);
+            order.setStatus(OrderStatus.PENDING.getLabel());
 
-            // Set the order reference in each order item
             for (OrderItem orderItem : order.getOrderItems()) {
                 orderItem.setOrder(order);
             }
 
-            // Save the order and order items to the database
             Order createdOrder = orderRepository.save(order);
 
-            // Create an order event
             OrderEvent orderEvent = createOrderEvent(createdOrder);
 
-            // Send the order event to Kafka
             orderProducer.sendMessage(orderEvent);
 
-            // Log success and return the created order as DTO
             LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
             return modelMapper.map(createdOrder, OrderDTO.class);
         } catch (OrderException e) {
             throw e;
         } catch (Exception e) {
-            // Log the error and throw an OrderException
             LOGGER.error("Failed to create order: {}", e.getMessage(), e);
             throw new OrderException("Failed to create order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -126,6 +112,17 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order != null) {
             return modelMapper.map(order, OrderDTO.class);
+        }
+        return null;
+    }
+
+    @Override
+    public OrderDTO updateOrderStatus(String orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if(order != null){
+            OrderContext context = new OrderContext(order);
+            context.handleStateChange(order);
+            return modelMapper.map(orderRepository.save(order), OrderDTO.class);
         }
         return null;
     }

@@ -1,7 +1,6 @@
 package net.javaguides.order_service.controller;
 
 
-
 import jakarta.servlet.http.HttpServletRequest;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.order.OrderDTO;
@@ -69,6 +68,23 @@ public class OrderController {
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);        }
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PatchMapping("/update/status/{orderId}")
+    public ResponseEntity<ApiResponse<?>> updateOrderStatus(@PathVariable("orderId") String orderId) {
+        try {
+            OrderDTO orderDTO = orderService.updateOrderStatus(orderId);
+            if (orderDTO != null) {
+                ApiResponse<OrderDTO> response = new ApiResponse<>(orderDTO, HttpStatus.OK.value());
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

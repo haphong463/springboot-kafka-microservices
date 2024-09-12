@@ -18,11 +18,12 @@ public class Order {
     @Id
     private String orderId;
 
-    private String status = "PENDING";
+    private String status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
 
     private Long userId;
-
 }
+
+
