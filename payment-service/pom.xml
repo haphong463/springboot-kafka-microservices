@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>io.github.haphong463</groupId>
 			<artifactId>common-lib</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -57,7 +57,11 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.modelmapper</groupId>
+			<artifactId>modelmapper</artifactId>
+			<version>3.2.1</version>
+		</dependency>
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
@@ -106,6 +110,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<finalName>payment-service</finalName>
 	</build>
 
 </project>
