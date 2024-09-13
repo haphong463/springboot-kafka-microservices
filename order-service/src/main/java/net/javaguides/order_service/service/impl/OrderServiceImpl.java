@@ -8,6 +8,8 @@ import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.order_service.dto.OrderRequestDto;
+import net.javaguides.order_service.dto.OrderResponseDto;
+import net.javaguides.order_service.dto.PaymentDto;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;
@@ -16,6 +18,7 @@ import net.javaguides.order_service.exception.OrderException;
 import net.javaguides.order_service.kafka.OrderProducer;
 import net.javaguides.order_service.repository.OrderRepository;
 import net.javaguides.order_service.service.OrderService;
+import net.javaguides.order_service.service.PaymentAPIClient;
 import net.javaguides.order_service.service.ProductAPIClient;
 import net.javaguides.order_service.service.StockAPIClient;
 import net.javaguides.order_service.service.state.OrderContext;
@@ -40,6 +43,8 @@ public class OrderServiceImpl implements OrderService {
     private final ModelMapper modelMapper;
     private final StockAPIClient stockAPIClient;
     private final ProductAPIClient productAPIClient;
+    private final PaymentAPIClient paymentAPIClient;
+
 
     @Override
     public OrderDTO placeOrder(OrderRequestDto orderDTO, Long userId) {
@@ -108,10 +113,17 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public OrderDTO checkOrderStatusByOrderId(String orderId) {
+    public OrderResponseDto checkOrderStatusByOrderId(String orderId) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order != null) {
-            return modelMapper.map(order, OrderDTO.class);
+            OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+            PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody().getData();
+
+            OrderResponseDto orderResponseDto = new OrderResponseDto();
+            orderResponseDto.setOrderDTO(orderDTO);
+            orderResponseDto.setPaymentDto(paymentDto);
+
+            return orderResponseDto;
         }
         return null;
     }

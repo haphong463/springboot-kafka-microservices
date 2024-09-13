@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.javaguides.common_lib.entity.AbstractEntity;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "orders")
-public class Order {
+public class Order extends AbstractEntity {
     @Id
     private String orderId;
 

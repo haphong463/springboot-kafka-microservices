@@ -87,7 +87,7 @@
 		<dependency>
 			<groupId>io.github.haphong463</groupId>
 			<artifactId>common-lib</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -118,6 +118,7 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
+		<finalName>order-service</finalName>
 	</build>
 
 </project>

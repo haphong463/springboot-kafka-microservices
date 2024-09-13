@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.order.OrderDTO;
 import net.javaguides.order_service.dto.OrderRequestDto;
+import net.javaguides.order_service.dto.OrderResponseDto;
 import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.dto.UserDto;
 import net.javaguides.order_service.exception.OrderException;
@@ -58,10 +59,10 @@ public class OrderController {
     @GetMapping("{orderId}")
     public ResponseEntity<ApiResponse<?>> getOrderStatus(@PathVariable("orderId") String orderId) {
         try {
-            OrderDTO existingOrder = orderService.checkOrderStatusByOrderId(orderId);
+            OrderResponseDto existingOrder = orderService.checkOrderStatusByOrderId(orderId);
 
             if (existingOrder != null) {
-                ApiResponse<OrderDTO> response = new ApiResponse<>(existingOrder, HttpStatus.OK.value());
+                ApiResponse<OrderResponseDto> response = new ApiResponse<>(existingOrder, HttpStatus.OK.value());
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
             ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
@@ -82,6 +83,9 @@ public class OrderController {
             }
             ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (IllegalStateException e) {
+            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.BAD_REQUEST.value());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
