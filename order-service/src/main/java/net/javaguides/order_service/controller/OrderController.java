@@ -39,19 +39,14 @@ public class OrderController {
             // Gửi cookie vào request Feign
             ApiResponse<UserDto> user = authenticationAPIClient.getCurrentUser(cookie).getBody();
             if (user != null && user.getData() != null) {
-                OrderDTO createOrder = orderService.placeOrder(order, user.getData().getId());
-                ApiResponse<OrderDTO> response = new ApiResponse<>(createOrder, HttpStatus.CREATED.value());
-                return new ResponseEntity<>(response, HttpStatus.CREATED);
+                OrderResponseDto createOrder = orderService.placeOrder(order, user.getData().getId());
+                return new ResponseEntity<>(new ApiResponse<>(createOrder, HttpStatus.CREATED.value()), HttpStatus.CREATED);
             }
-
-            ApiResponse<String> response = new ApiResponse<>("User not found!", HttpStatus.NOT_FOUND.value());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new ApiResponse<>("User not found!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
         } catch (OrderException e) {
-            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), e.getStatus().value());
-            return new ResponseEntity<>(response, e.getStatus());
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), e.getStatus().value()), e.getStatus());
         } catch (Exception e) {
-            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -76,19 +71,14 @@ public class OrderController {
     @PatchMapping("/update/status/{orderId}")
     public ResponseEntity<ApiResponse<?>> updateOrderStatus(@PathVariable("orderId") String orderId) {
         try {
-            OrderDTO orderDTO = orderService.updateOrderStatus(orderId);
-            if (orderDTO != null) {
-                ApiResponse<OrderDTO> response = new ApiResponse<>(orderDTO, HttpStatus.OK.value());
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            }
-            ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            OrderResponseDto orderDTO = orderService.updateOrderStatus(orderId);
+            return orderDTO != null ? new ResponseEntity<>(new ApiResponse<>(orderDTO, HttpStatus.OK.value()), HttpStatus.OK)
+                    :
+                    new ResponseEntity<>(new ApiResponse<>("Not found order!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
         } catch (IllegalStateException e) {
-            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.BAD_REQUEST.value());
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

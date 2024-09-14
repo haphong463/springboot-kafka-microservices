@@ -47,60 +47,16 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public OrderDTO placeOrder(OrderRequestDto orderDTO, Long userId) {
+    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto, Long userId) {
         try {
-            OrderDTO newOrder = modelMapper.map(orderDTO, OrderDTO.class);
+            OrderDTO newOrder = createOrderDTO(orderRequestDto, userId);
 
-            Set<String> productIds = orderDTO.getOrderItems()
-                    .stream()
-                    .map(OrderItemDTO::getProductId)
-                    .collect(Collectors.toSet());
+            validateStockAndPrice(orderRequestDto, newOrder);
 
-            List<StockDto> stockDtos = stockAPIClient.getProductsStock(productIds).getBody();
+            Order createdOrder = saveOrder(newOrder);
+            sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod());
 
-            ApiResponse<List<ProductDTO>> productDTOs = productAPIClient.getProductsByIds(productIds).getBody();
-
-            for (OrderItemDTO orderItemDTO : orderDTO.getOrderItems()) {
-
-                assert productDTOs != null;
-                ProductDTO productDTO = productDTOs.getData().stream()
-                        .filter(product -> product.getId().equals(orderItemDTO.getProductId()))
-                        .findFirst()
-                        .orElseThrow(() -> new OrderException("Product not found for ID: " + orderItemDTO.getProductId(), HttpStatus.BAD_REQUEST));
-
-                // check stock availability
-                StockDto stockDto = stockDtos.stream()
-                        .filter(stock -> stock.getProductId().equals(orderItemDTO.getProductId()))
-                        .findFirst()
-                        .orElseThrow(() -> new OrderException("Stock information not found for product: " + orderItemDTO.getProductId(), HttpStatus.BAD_REQUEST));
-
-                if (stockDto.getQty() < orderItemDTO.getQuantity()) {
-                    String errorMessage = String.format("Product %s is out of stock or insufficient quantity.", orderItemDTO.getProductId());
-                    LOGGER.error(errorMessage);
-                    throw new OrderException(errorMessage, HttpStatus.BAD_REQUEST);
-                }
-
-                orderItemDTO.setPrice(productDTO.getPrice());
-            }
-
-            newOrder.setOrderId(UUID.randomUUID().toString());
-            newOrder.setUserId(userId);
-
-            Order order = modelMapper.map(newOrder, Order.class);
-            order.setStatus(OrderStatus.PENDING.getLabel());
-
-            for (OrderItem orderItem : order.getOrderItems()) {
-                orderItem.setOrder(order);
-            }
-
-            Order createdOrder = orderRepository.save(order);
-
-            OrderEvent orderEvent = createOrderEvent(createdOrder);
-
-            orderProducer.sendMessage(orderEvent);
-
-            LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
-            return modelMapper.map(createdOrder, OrderDTO.class);
+            return createOrderResponseDto(createdOrder);
         } catch (OrderException e) {
             throw e;
         } catch (Exception e) {
@@ -108,9 +64,6 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderException("Failed to create order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
 
     @Override
     public OrderResponseDto checkOrderStatusByOrderId(String orderId) {
@@ -129,22 +82,105 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDTO updateOrderStatus(String orderId) {
+    public OrderResponseDto updateOrderStatus(String orderId) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if(order != null){
             OrderContext context = new OrderContext(order);
             context.handleStateChange(order);
-            return modelMapper.map(orderRepository.save(order), OrderDTO.class);
+
+            OrderDTO orderDTO = modelMapper.map(orderRepository.save(order), OrderDTO.class);
+
+            PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody().getData();
+
+            OrderResponseDto orderResponseDto = new OrderResponseDto();
+            orderResponseDto.setOrderDTO(orderDTO);
+            orderResponseDto.setPaymentDto(paymentDto);
+            return orderResponseDto;
         }
         return null;
     }
 
-    private OrderEvent createOrderEvent(Order createdOrder) {
+    private OrderEvent createOrderEvent(Order createdOrder, String paymentMethod) {
         OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
         OrderEvent orderEvent = new OrderEvent();
         orderEvent.setOrderDTO(createdOrderDto);
         orderEvent.setStatus("PENDING");
         orderEvent.setMessage("Order status is in pending state");
+        orderEvent.setPaymentMethod(paymentMethod);
         return orderEvent;
     }
+
+    private OrderDTO createOrderDTO(OrderRequestDto orderRequestDto, Long userId) {
+        OrderDTO newOrder = modelMapper.map(orderRequestDto, OrderDTO.class);
+        newOrder.setOrderId(UUID.randomUUID().toString());
+        newOrder.setUserId(userId);
+        return newOrder;
+    }
+
+    private void validateStockAndPrice(OrderRequestDto orderRequestDto, OrderDTO newOrder) {
+        Set<String> productIds = orderRequestDto.getOrderItems()
+                .stream()
+                .map(OrderItemDTO::getProductId)
+                .collect(Collectors.toSet());
+
+        List<StockDto> stockDtos = stockAPIClient.getProductsStock(productIds).getBody();
+        ApiResponse<List<ProductDTO>> productDTOs = productAPIClient.getProductsByIds(productIds).getBody();
+
+        for (OrderItemDTO orderItemDTO : orderRequestDto.getOrderItems()) {
+            ProductDTO productDTO = getProductDTO(productDTOs, orderItemDTO.getProductId());
+            StockDto stockDto = getStockDTO(stockDtos, orderItemDTO.getProductId());
+
+            checkStockAvailability(orderItemDTO, stockDto);
+
+            orderItemDTO.setPrice(productDTO.getPrice());
+        }
+    }
+
+    private ProductDTO getProductDTO(ApiResponse<List<ProductDTO>> productDTOs, String productId) {
+        assert productDTOs != null;
+        return productDTOs.getData().stream()
+                .filter(product -> product.getId().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new OrderException("Product not found for ID: " + productId, HttpStatus.BAD_REQUEST));
+    }
+
+    private StockDto getStockDTO(List<StockDto> stockDtos, String productId) {
+        return stockDtos.stream()
+                .filter(stock -> stock.getProductId().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new OrderException("Stock information not found for product: " + productId, HttpStatus.BAD_REQUEST));
+    }
+
+    private void checkStockAvailability(OrderItemDTO orderItemDTO, StockDto stockDto) {
+        if (stockDto.getQty() < orderItemDTO.getQuantity()) {
+            String errorMessage = String.format("Product %s is out of stock or insufficient quantity.", orderItemDTO.getProductId());
+            LOGGER.error(errorMessage);
+            throw new OrderException(errorMessage, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private Order saveOrder(OrderDTO newOrder) {
+        Order order = modelMapper.map(newOrder, Order.class);
+        order.setStatus(OrderStatus.PENDING.getLabel());
+        for (OrderItem orderItem : order.getOrderItems()) {
+            orderItem.setOrder(order);
+        }
+        return orderRepository.save(order);
+    }
+
+    private void sendOrderEvent(Order createdOrder, String paymentMethod) {
+        OrderEvent orderEvent = createOrderEvent(createdOrder, paymentMethod);
+        orderProducer.sendMessage(orderEvent);
+    }
+
+    private OrderResponseDto createOrderResponseDto(Order createdOrder) {
+        OrderResponseDto orderResponseDto = new OrderResponseDto();
+        PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(createdOrder.getOrderId()).getBody().getData();
+        OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
+        orderResponseDto.setPaymentDto(paymentDto);
+        orderResponseDto.setOrderDTO(createdOrderDto);
+        LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
+        return orderResponseDto;
+    }
+
 }

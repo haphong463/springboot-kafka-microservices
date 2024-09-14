@@ -13,4 +13,5 @@ import java.util.List;
 public class OrderRequestDto {
     private String status;
     private List<OrderItemDTO> orderItems;
+    private String paymentMethod;
 }

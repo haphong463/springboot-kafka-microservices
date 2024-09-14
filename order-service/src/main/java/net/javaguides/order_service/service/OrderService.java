@@ -6,7 +6,7 @@ import net.javaguides.order_service.dto.OrderRequestDto;
 import net.javaguides.order_service.dto.OrderResponseDto;
 
 public interface OrderService {
-    OrderDTO placeOrder(OrderRequestDto order, Long userId);
+    OrderResponseDto placeOrder(OrderRequestDto order, Long userId);
     OrderResponseDto checkOrderStatusByOrderId(String orderId);
-    OrderDTO updateOrderStatus(String orderId);
+    OrderResponseDto updateOrderStatus(String orderId);
 }
