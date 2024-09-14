@@ -8,5 +8,5 @@ import net.javaguides.order_service.dto.OrderResponseDto;
 public interface OrderService {
     OrderResponseDto placeOrder(OrderRequestDto order, Long userId);
     OrderResponseDto checkOrderStatusByOrderId(String orderId);
-    OrderResponseDto updateOrderStatus(String orderId);
+    OrderResponseDto updateOrderStatus(String orderId, int version);
 }

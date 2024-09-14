@@ -1,6 +1,7 @@
 package net.javaguides.order_service.controller;
 
 
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.order.OrderDTO;
@@ -69,13 +70,13 @@ public class OrderController {
     }
 
     @PatchMapping("/update/status/{orderId}")
-    public ResponseEntity<ApiResponse<?>> updateOrderStatus(@PathVariable("orderId") String orderId) {
+    public ResponseEntity<ApiResponse<?>> updateOrderStatus(@PathVariable("orderId") String orderId, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
         try {
-            OrderResponseDto orderDTO = orderService.updateOrderStatus(orderId);
+            OrderResponseDto orderDTO = orderService.updateOrderStatus(orderId, version);
             return orderDTO != null ? new ResponseEntity<>(new ApiResponse<>(orderDTO, HttpStatus.OK.value()), HttpStatus.OK)
                     :
                     new ResponseEntity<>(new ApiResponse<>("Not found order!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | OptimisticLockException e) {
             return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);

@@ -1,6 +1,7 @@
 package net.javaguides.order_service.service.impl;
 
 
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.order.OrderDTO;
@@ -82,9 +83,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponseDto updateOrderStatus(String orderId) {
+    public OrderResponseDto updateOrderStatus(String orderId, int version) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if(order != null){
+            if(order.getVersion() != version){
+                throw new OptimisticLockException("Version conflict!");
+            }
+
             OrderContext context = new OrderContext(order);
             context.handleStateChange(order);
 
