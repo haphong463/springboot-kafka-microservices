@@ -2,8 +2,13 @@ package net.javaguides.identity_service.service.impl;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import net.javaguides.identity_service.dto.SignUpRequest;
+import net.javaguides.identity_service.entity.Role;
 import net.javaguides.identity_service.entity.UserCredential;
+import net.javaguides.identity_service.enums.ERole;
 import net.javaguides.identity_service.exception.AuthException;
+import net.javaguides.identity_service.repository.RoleRepository;
 import net.javaguides.identity_service.repository.UserCredentialRepository;
 import net.javaguides.identity_service.service.AuthService;
 import net.javaguides.identity_service.service.JwtService;
@@ -11,28 +16,47 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
-    public AuthServiceImpl(UserCredentialRepository userCredentialRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
-        this.userCredentialRepository = userCredentialRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-    }
+    private final RoleRepository roleRepository;
 
     @Override
-    public String saveUser(UserCredential userCredential) {
-        boolean existingUsername = checkExistingUsername(userCredential.getName());
-        if(existingUsername){
-            throw new AuthException("Username already exists in the database!", HttpStatus.BAD_REQUEST);
-        }
+    public String saveUser(SignUpRequest signUpRequest) {
+        try {
+            boolean existingUsername = checkExistingUsername(signUpRequest.getName());
+            if(existingUsername){
+                throw new AuthException("Username already exists in the database!", HttpStatus.BAD_REQUEST);
+            }
+            UserCredential userCredential = new UserCredential();
+            userCredential.setName(signUpRequest.getName());
+            userCredential.setEmail(signUpRequest.getEmail());
+            userCredential.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
+            Set<Role> roles = new HashSet<>();
+            for (String roleName : signUpRequest.getRoles()) {
+                ERole eRole;
+                try {
+                    eRole = ERole.valueOf(roleName.toUpperCase());  // Chuyển vai trò sang chữ in hoa
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid role name: " + roleName);
+                }
 
-        userCredential.setPassword(passwordEncoder.encode(userCredential.getPassword()));
-        userCredentialRepository.save(userCredential);
-        return "user added to the system";
+                Role role = roleRepository.findByName(eRole)
+                        .orElseThrow(() -> new RuntimeException("Role not found"));
+                roles.add(role);
+            }
+            userCredential.setRoles(roles);
+            userCredentialRepository.save(userCredential);
+            return "User added to the system!";
+        }catch(Exception e){
+            throw new RuntimeException("Error registering user: " + e.getMessage());
+        }
     }
 
     @Override

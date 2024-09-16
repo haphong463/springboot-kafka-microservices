@@ -4,9 +4,11 @@ package net.javaguides.identity_service.controller;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.identity_service.annotation.CurrentUser;
 import net.javaguides.identity_service.dto.AuthRequest;
+import net.javaguides.identity_service.dto.SignUpRequest;
 import net.javaguides.identity_service.dto.UserDto;
 import net.javaguides.identity_service.entity.UserCredential;
 import net.javaguides.identity_service.exception.AuthException;
@@ -23,21 +25,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
 
-    public AuthController(AuthService authService, AuthenticationManager authenticationManager, UserService userService) {
-        this.authService = authService;
-        this.authenticationManager = authenticationManager;
-        this.userService = userService;
-    }
-
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> addNewUser(@RequestBody UserCredential userCredential) {
+    public ResponseEntity<ApiResponse<String>> addNewUser(@RequestBody SignUpRequest signUpRequest) {
         try {
-            String message = authService.saveUser(userCredential);
+            String message = authService.saveUser(signUpRequest);
             ApiResponse<String> apiResponse = new ApiResponse<>(message, HttpStatus.CREATED.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         }
