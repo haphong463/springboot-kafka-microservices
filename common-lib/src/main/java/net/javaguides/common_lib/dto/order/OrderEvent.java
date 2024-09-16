@@ -11,4 +11,5 @@ public class OrderEvent {
     private String message;
     private String status;
     private OrderDTO orderDTO;
+    private String paymentMethod;
 }

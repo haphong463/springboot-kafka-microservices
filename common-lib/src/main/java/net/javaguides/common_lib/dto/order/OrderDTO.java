@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -16,4 +17,7 @@ public class OrderDTO {
     private String status;
     private List<OrderItemDTO> orderItems;
     private Long userId;
+    private Date createdAt;
+    private Date updatedAt;
+    private int version;
 }

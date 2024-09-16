@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.haphong463</groupId>
 	<artifactId>common-lib</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 	<name>common-lib</name>
 	<description>Demo project for Spring Boot common-lib</description>
 	<url/>
@@ -30,7 +30,19 @@
 			<version>1.18.34</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+			<version>3.3.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+			<version>3.3.3</version>
+		</dependency>
+
 	</dependencies>
+
 
 	<build>
 		<plugins>
