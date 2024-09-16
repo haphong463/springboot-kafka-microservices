@@ -6,7 +6,6 @@ import net.javaguides.common_lib.dto.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,74 +15,80 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
-public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
-
-    @Autowired
-    private RouteValidator routeValidator;
+public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBasedAccessFilter.Config> {
 
     @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
-    private ObjectMapper objectMapper;  // Sử dụng để serialize ApiResponse
+    private ObjectMapper objectMapper;  // Inject ObjectMapper here
 
-    public AuthenticationFilter() {
+    public RoleBasedAccessFilter() {
         super(Config.class);
     }
 
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            if (routeValidator.isSecured.test(exchange.getRequest())) {
-                // Kiểm tra xem request có chứa cookie không
-                HttpHeaders headers = exchange.getRequest().getHeaders();
-                if (!headers.containsKey(HttpHeaders.COOKIE)) {
-                    return this.onError(exchange, "Missing cookies", HttpStatus.UNAUTHORIZED);
-                }
+            ServerHttpRequest request = exchange.getRequest();
 
-                // Lấy token từ cookie
-                String token = extractTokenFromCookies(exchange.getRequest());
+            // Only apply the filter to certain HTTP methods (e.g., POST, PUT, DELETE)
+            if (isProtectedMethod(request.getMethod())) {
+                // Extract token from cookies
+                String token = extractTokenFromCookies(request);
+
                 if (token == null) {
-                    return this.onError(exchange, "Missing or invalid token in cookies", HttpStatus.UNAUTHORIZED);
+                    return onError(exchange, "Missing or invalid token", HttpStatus.UNAUTHORIZED);
                 }
 
                 try {
-                    // Kiểm tra tính hợp lệ của token
+                    // Validate token
                     jwtUtil.validateToken(token);
+
+                    // Extract roles from token
+                    List<String> roles = jwtUtil.extractRoles(token);
+
+                    // Check if the user has the required role
+                    if (!roles.contains("EMPLOYEE")) {
+                        return onError(exchange, "Forbidden access", HttpStatus.FORBIDDEN);
+                    }
                 } catch (Exception e) {
-                    return this.onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
+                    return onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
                 }
             }
             return chain.filter(exchange);
         };
     }
 
+    private boolean isProtectedMethod(HttpMethod method) {
+        // Define the methods that require EMPLOYEE role
+        return HttpMethod.POST.equals(method) || HttpMethod.PUT.equals(method) || HttpMethod.DELETE.equals(method);
+    }
 
     private String extractTokenFromCookies(ServerHttpRequest request) {
         return request.getCookies().getFirst("token") != null ?
-                request.getCookies().getFirst("token").getValue() : null;
+                request.getCookies().getFirst("token").getValue() : null; // Get the value of the "token" cookie
     }
 
-    // Hàm để trả về phản hồi lỗi tùy chỉnh
     private Mono<Void> onError(ServerWebExchange exchange, String errorMessage, HttpStatus httpStatus) {
         exchange.getResponse().setStatusCode(httpStatus);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         ApiResponse<String> apiResponse = new ApiResponse<>(errorMessage, httpStatus.value());
         try {
-            // Chuyển ApiResponse thành JSON
             byte[] bytes = objectMapper.writeValueAsString(apiResponse).getBytes(StandardCharsets.UTF_8);
 
             return exchange.getResponse().writeWith(Mono.just(exchange.getResponse()
                     .bufferFactory().wrap(bytes)));
         } catch (Exception e) {
-            // Xử lý nếu gặp lỗi trong quá trình serialize
             return Mono.error(e);
         }
     }
 
     public static class Config {
+        // No configuration properties needed for this filter
     }
 }
