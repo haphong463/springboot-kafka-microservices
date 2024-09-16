@@ -1,20 +1,14 @@
 package net.javaguides.order_service.controller;
 
-
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import net.javaguides.common_lib.dto.ApiResponse;
-import net.javaguides.common_lib.dto.order.OrderDTO;
 import net.javaguides.order_service.dto.OrderRequestDto;
 import net.javaguides.order_service.dto.OrderResponseDto;
-import net.javaguides.order_service.dto.StockDto;
 import net.javaguides.order_service.dto.UserDto;
 import net.javaguides.order_service.exception.OrderException;
-import net.javaguides.order_service.interceptor.FeignClientInterceptor;
 import net.javaguides.order_service.service.AuthenticationAPIClient;
 import net.javaguides.order_service.service.OrderService;
-import net.javaguides.order_service.service.StockAPIClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,14 +52,11 @@ public class OrderController {
             OrderResponseDto existingOrder = orderService.checkOrderStatusByOrderId(orderId);
 
             if (existingOrder != null) {
-                ApiResponse<OrderResponseDto> response = new ApiResponse<>(existingOrder, HttpStatus.OK.value());
-                return new ResponseEntity<>(response, HttpStatus.OK);
+                return new ResponseEntity<>(new ApiResponse<>(existingOrder, HttpStatus.OK.value()), HttpStatus.OK);
             }
-            ApiResponse<String> response = new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
-            ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
