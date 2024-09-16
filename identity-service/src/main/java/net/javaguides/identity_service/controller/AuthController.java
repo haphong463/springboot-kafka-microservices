@@ -2,15 +2,12 @@ package net.javaguides.identity_service.controller;
 
 
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
-import net.javaguides.identity_service.annotation.CurrentUser;
 import net.javaguides.identity_service.dto.AuthRequest;
 import net.javaguides.identity_service.dto.SignUpRequest;
 import net.javaguides.identity_service.dto.UserDto;
-import net.javaguides.identity_service.entity.UserCredential;
 import net.javaguides.identity_service.exception.AuthException;
 import net.javaguides.identity_service.service.AuthService;
 import net.javaguides.identity_service.service.UserService;
@@ -19,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -79,7 +76,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<?>> getCurrentUser(@CurrentUser UserDetails currentUser) {
+    public ResponseEntity<ApiResponse<?>> getCurrentUser(@AuthenticationPrincipal UserDetails currentUser) {
         try {
             UserDto userDto = userService.getUserByUsername(currentUser.getUsername());
             ApiResponse<UserDto> apiResponse = new ApiResponse<>(userDto, HttpStatus.OK.value());

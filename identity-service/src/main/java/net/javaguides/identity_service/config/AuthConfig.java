@@ -47,7 +47,14 @@ public class AuthConfig {
                         .accessDeniedHandler(accessDeniedHandler)  // Custom AccessDeniedHandler
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/token", "/api/v1/auth/validate").permitAll()
+                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/token", "/api/v1/auth/validate", "/swagger-ui/**","/v2/api-docs",
+                                "/swagger-resources",
+                                "/swagger-resources/**",
+                                "/configuration/ui",
+                                "/configuration/security",
+                                "/swagger-ui.html",
+                                "/webjars/**",
+                                "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
