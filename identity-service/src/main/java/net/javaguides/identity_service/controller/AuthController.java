@@ -53,7 +53,7 @@ public class AuthController {
         try {
             Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
             if (authenticate.isAuthenticated()) {
-                String generateToken = authService.generateToken(authRequest.getUsername(), response);
+                String generateToken = authService.generateToken(authRequest, response);
 
                 ApiResponse<String> apiResponse = new ApiResponse<>(generateToken, HttpStatus.OK.value());
                 return new ResponseEntity<>(apiResponse, HttpStatus.OK);

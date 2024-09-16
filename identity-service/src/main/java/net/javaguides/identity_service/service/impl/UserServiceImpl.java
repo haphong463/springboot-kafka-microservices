@@ -22,6 +22,7 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserByUsername(String username) {
         UserCredential userCredential = userCredentialRepository.findByName(username).orElse(null);
         if(userCredential != null){
+            System.out.println("UserCredential: " + userCredential);
             return modelMapper.map(userCredential, UserDto.class);
         }
         return null;

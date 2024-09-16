@@ -2,7 +2,10 @@ package net.javaguides.identity_service.service.impl;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.SecurityContext;
 import lombok.RequiredArgsConstructor;
+import net.javaguides.identity_service.config.CustomUserDetails;
+import net.javaguides.identity_service.dto.AuthRequest;
 import net.javaguides.identity_service.dto.SignUpRequest;
 import net.javaguides.identity_service.entity.Role;
 import net.javaguides.identity_service.entity.UserCredential;
@@ -13,10 +16,15 @@ import net.javaguides.identity_service.repository.UserCredentialRepository;
 import net.javaguides.identity_service.service.AuthService;
 import net.javaguides.identity_service.service.JwtService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -26,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
+    private final AuthenticationManager authenticationManager;
 
     @Override
     public String saveUser(SignUpRequest signUpRequest) {
@@ -60,15 +69,28 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String generateToken(String username, HttpServletResponse response) {
-        String token = jwtService.generateToken(username);
+    public String generateToken(AuthRequest authRequest, HttpServletResponse response) {
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
 
-        Cookie cookie = new Cookie("token", token);
+        Optional<UserCredential> optionalUser = userCredentialRepository.findByName(authRequest.getUsername());
+        if(!optionalUser.isPresent()){
+            throw new AuthException("Invalid credentials! Please try again!",HttpStatus.UNAUTHORIZED);
+        }
+
+        UserCredential userCredential = optionalUser.get();
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String jwtToken = jwtService.generateToken(authentication);
+
+        Cookie cookie = new Cookie("token", jwtToken);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(30 * 60);
         response.addCookie(cookie);
-        return token;
+        return jwtToken;
     }
 
     @Override

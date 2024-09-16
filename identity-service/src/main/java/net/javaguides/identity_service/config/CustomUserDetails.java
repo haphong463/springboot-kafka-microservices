@@ -1,21 +1,31 @@
 package net.javaguides.identity_service.config;
+import lombok.Getter;
 import net.javaguides.identity_service.entity.UserCredential;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class CustomUserDetails implements UserDetails {
 
     private Long id;
     private String username;
     private String password;
+    @Getter
+    private String email;
+    private Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(Long id, String username, String password) {
+
+    public CustomUserDetails(Long id, String username, String password, String email, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
+        this.email = email;
         this.username = username;
         this.password = password;
+        this.authorities = authorities;
     }
 
     public CustomUserDetails(UserCredential userCredential) {
@@ -25,7 +35,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return authorities;
     }
 
     @Override
@@ -59,13 +69,18 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public static CustomUserDetails build(UserCredential user) {
-        CustomUserDetails userDetails = new CustomUserDetails(
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+                .collect(Collectors.toList());
+
+        return new CustomUserDetails(
+
                 user.getId(),
                 user.getName(),
-                user.getPassword()
+                user.getPassword(),
+                user.getEmail(),
+                authorities
                 );
-
-        return userDetails;
     }
 
     @Override
@@ -77,4 +92,5 @@ public class CustomUserDetails implements UserDetails {
         CustomUserDetails user = (CustomUserDetails) o;
         return Objects.equals(id, user.id);
     }
+
 }
