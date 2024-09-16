@@ -45,7 +45,8 @@ curl -X POST http://localhost:9191/api/v1/order \
             "productId": "768aee20-dd48-4458-88bd-07bfff726e27",
             "quantity": 1
         }
-    ]
+    ],
+    "paymentMethod": "COD"
 }'
 ```
 
