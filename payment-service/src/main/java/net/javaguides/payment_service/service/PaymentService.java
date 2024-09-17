@@ -8,4 +8,5 @@ import net.javaguides.payment_service.entity.Payment;
 public interface PaymentService {
     void createPayment(OrderEvent orderEvent);
     PaymentDto getPaymentByOrderId(String orderId);
+    PaymentDto updateStatusPayment(String orderId, String status);
 }

@@ -34,7 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         newPayment.setAmount(amount);
-        newPayment.setPaymentMethod("Paypal");
+        newPayment.setPaymentMethod(orderEvent.getPaymentMethod());
         newPayment.setOrderId(orderEvent.getOrderDTO().getOrderId());
         newPayment.setStatus(PaymentStatus.PENDING);
 
@@ -48,6 +48,11 @@ public class PaymentServiceImpl implements PaymentService {
 
             return modelMapper.map(existingPayment, PaymentDto.class);
         }
+        return null;
+    }
+
+    @Override
+    public PaymentDto updateStatusPayment(String orderId, String status) {
         return null;
     }
 }
