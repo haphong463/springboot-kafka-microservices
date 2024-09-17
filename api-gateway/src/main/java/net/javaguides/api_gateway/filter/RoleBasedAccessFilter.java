@@ -34,10 +34,11 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
+            HttpMethod requestMethod = request.getMethod();
 
-            // Only apply the filter to certain HTTP methods (e.g., POST, PUT, DELETE)
-            if (isProtectedMethod(request.getMethod())) {
-                // Extract token from cookies
+            // Kiểm tra xem phương thức HTTP có nằm trong danh sách được bảo vệ không
+            if (config.getMethods() != null && config.getMethods().contains(requestMethod.name())) {
+                // Trích xuất token từ cookie
                 String token = extractTokenFromCookies(request);
 
                 if (token == null) {
@@ -45,32 +46,29 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
                 }
 
                 try {
-                    // Validate token
+                    // Xác thực token
                     jwtUtil.validateToken(token);
 
-                    // Extract roles from token
+                    // Trích xuất vai trò từ token
                     List<String> roles = jwtUtil.extractRoles(token);
 
-                    // Check if the user has the required role
-                    if (!roles.contains("EMPLOYEE")) {
+                    // Kiểm tra vai trò của người dùng
+                    boolean hasRole = roles.stream().anyMatch(config.getRequiredRoles()::contains);
+                    if (!hasRole) {
                         return onError(exchange, "Forbidden access", HttpStatus.FORBIDDEN);
                     }
                 } catch (Exception e) {
                     return onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
                 }
             }
+
             return chain.filter(exchange);
         };
     }
 
-    private boolean isProtectedMethod(HttpMethod method) {
-        // Define the methods that require EMPLOYEE role
-        return HttpMethod.POST.equals(method) || HttpMethod.PUT.equals(method) || HttpMethod.DELETE.equals(method);
-    }
-
     private String extractTokenFromCookies(ServerHttpRequest request) {
         return request.getCookies().getFirst("token") != null ?
-                request.getCookies().getFirst("token").getValue() : null; // Get the value of the "token" cookie
+                request.getCookies().getFirst("token").getValue() : null; // Lấy giá trị của cookie "token"
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String errorMessage, HttpStatus httpStatus) {
@@ -80,7 +78,6 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
         ApiResponse<String> apiResponse = new ApiResponse<>(errorMessage, httpStatus.value());
         try {
             byte[] bytes = objectMapper.writeValueAsString(apiResponse).getBytes(StandardCharsets.UTF_8);
-
             return exchange.getResponse().writeWith(Mono.just(exchange.getResponse()
                     .bufferFactory().wrap(bytes)));
         } catch (Exception e) {
@@ -89,6 +86,25 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
     }
 
     public static class Config {
-        // No configuration properties needed for this filter
+        private List<String> requiredRoles;
+        private List<String> methods;
+
+        // Getters and Setters
+
+        public List<String> getRequiredRoles() {
+            return requiredRoles;
+        }
+
+        public void setRequiredRoles(List<String> requiredRoles) {
+            this.requiredRoles = requiredRoles;
+        }
+
+        public List<String> getMethods() {
+            return methods;
+        }
+
+        public void setMethods(List<String> methods) {
+            this.methods = methods;
+        }
     }
 }
