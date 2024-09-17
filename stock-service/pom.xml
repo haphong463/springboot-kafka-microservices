@@ -76,7 +76,7 @@
 		<dependency>
 			<groupId>io.github.haphong463</groupId>
 			<artifactId>common-lib</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
@@ -102,6 +102,7 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
+		<finalName>stock-service</finalName>
 	</build>
 
 </project>
