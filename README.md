@@ -1,6 +1,3 @@
-![E-commerce](https://github.com/user-attachments/assets/971fbd4f-0504-4135-9652-0e97e7a4eaf0)
-![E-Commerce](https://github.com/user-attachments/assets/292f8933-3c8a-4e17-86f5-482615bfd106)
-
 # E-commerce Backend Microservices Project (Dockerized) 🚀
 
 ## Introduction 🌟
