@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentDto {
-    private String id;
     private String orderId;
     private BigDecimal amount;
     private String paymentMethod;

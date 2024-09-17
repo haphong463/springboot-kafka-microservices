@@ -46,9 +46,8 @@ public class OrderServiceImpl implements OrderService {
     private final ProductAPIClient productAPIClient;
     private final PaymentAPIClient paymentAPIClient;
 
-
     @Override
-    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto, Long userId) {
+    public OrderDTO placeOrder(OrderRequestDto orderRequestDto, Long userId) {
         try {
             OrderDTO newOrder = createOrderDTO(orderRequestDto, userId);
 
@@ -57,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
             Order createdOrder = saveOrder(newOrder);
             sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod());
 
-            return createOrderResponseDto(createdOrder);
+            return modelMapper.map(createdOrder, OrderDTO.class);
         } catch (OrderException e) {
             throw e;
         } catch (Exception e) {
@@ -178,7 +177,7 @@ public class OrderServiceImpl implements OrderService {
         orderProducer.sendMessage(orderEvent);
     }
 
-    private OrderResponseDto createOrderResponseDto(Order createdOrder) {
+    private OrderResponseDto createOrderResponseDto(Order createdOrder, OrderRequestDto orderRequestDto) {
         OrderResponseDto orderResponseDto = new OrderResponseDto();
         PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(createdOrder.getOrderId()).getBody().getData();
         OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
