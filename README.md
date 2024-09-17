@@ -70,8 +70,8 @@ Ensure you have the following installed on your development machine:
 ### 🚀 **Clone Repository**
 
 ```bash
-git clone https://github.com/your-username/ecommerce-microservices-backend.git
-cd ecommerce-microservices-backend
+git clone https://github.com/haphong463/springboot-kafka-microservices.git
+cd springboot-kafka-microservices
 ```
 
 ### 🐳 Run Microservices With Docker Compose
@@ -175,42 +175,49 @@ order-service:
 
 ### 🛠️ Testing APIs
 
-Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are examples of how to perform basic operations:
+Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are examples of how to perform basic operations, considering the role-based access for each operation and using cookies for authentication:
 
 #### 📦 Example of Product Service
 
-**Get All Products**
+**Add New Product (Role Required: EMPLOYEE)**
 
-```bash
-curl -X GET http://localhost:9191/api/products
-```
-
-**Add New Product**
+To perform this operation, your user must be authenticated as an employee. Ensure your cookie with authentication details is included in the request.
 
 ```bash
 curl -X POST http://localhost:9191/api/products \
      -H "Content-Type: application/json" \
+     -b "token=your_jwt_token" \
      -d '{
            "name": "New Product",
+           "imageUrl": "image1.png",
            "description": "Product description",
            "price": 99.99,
-           "stock": 100
+           "stockQuantity": 100
          }'
 ```
 
 #### 🧾 Example of Order Service
 
-**Create New Order**
+**Create New Order (Role Required: CUSTOMER)**
+
+To perform this operation, your user must be authenticated as a customer. Ensure your cookie with authentication details is included in the request.
 
 ```bash
-curl -X POST http://localhost:9191/api/orders \
+curl -X POST http://localhost:9191/api/order \
      -H "Content-Type: application/json" \
+     -b "token=your_jwt_token" \
      -d '{
-           "productId": 1,
-           "quantity": 2,
-           "userId": 1
+            "orderItems": [
+                {
+                    "productId": 02f6f017-816d-419f-a680-26f814be70e5
+                    "quantity": 1
+                }
+            ],
+            "paymentMethod": "COD"
          }'
 ```
+
+This modification ensures that the authentication method reflects the use of cookies as per your application's configuration. If there are more details to adjust or add, feel free to tell me!
 
 ## Database Management 🗃️
 
@@ -264,12 +271,12 @@ mysql -u root -proot order_db
 **Add Record to Role Table**
 
 ```sql
-CREATE TABLE IF NOT EXISTS Role (
+CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
-INSERT INTO Role (name) VALUES ('EMPLOYEE'), ('ADMINISTRATOR'), ('CUSTOMER');
+INSERT INTO roles (name) VALUES ('EMPLOYEE'), ('ADMINISTRATOR'), ('CUSTOMER');
 ```
 
 **Check Records Have Been Successfully Added**
@@ -329,10 +336,8 @@ exit
   
   ```yaml
   volumes:
-    mysql-api-gateway-data:
     mysql-order-service-data:
     mysql-identity-service-data:
-    mysql-eureka-server-data:
     mysql-payment-service-data:
     mysql-product-service-data:
     mysql-stock-service-data:
