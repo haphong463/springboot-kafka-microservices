@@ -323,7 +323,7 @@ INSERT INTO roles (name) VALUES ('EMPLOYEE'), ('ADMINISTRATOR'), ('CUSTOMER');
 **Check Records Have Been Successfully Added**
 
 ```sql
-SELECT * FROM Role;
+SELECT * FROM roles;
 ```
 
 **Expected Result:**
