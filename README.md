@@ -177,6 +177,47 @@ order-service:
 
 Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are examples of how to perform basic operations, considering the role-based access for each operation and using cookies for authentication:
 
+### 🛠️ User Registration and Authentication
+
+Below are the steps and examples for registering a new user and obtaining authentication tokens using cookies.
+
+#### 🔐 User Registration
+
+To register a new user, provide their name, password, email, and roles. Roles should be specified as an array, and can include roles like `CUSTOMER`, `EMPLOYEE`, etc.
+
+**Endpoint**: `POST http://localhost:9191/api/v1/auth/register`
+
+```bash
+curl -X POST http://localhost:9191/api/v1/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{
+           "name": "johndoe",
+           "password": "securepassword",
+           "email": "john.doe@example.com",
+           "roles": ["CUSTOMER"]
+         }'
+```
+
+#### 🔑 Authentication (Login)
+
+To log in and receive a session cookie, submit your username and password to the authentication endpoint. The server will return a cookie containing your session ID if the login is successful.
+
+**Endpoint**: `POST http://localhost:9191/api/v1/auth/token`
+
+```bash
+curl -X POST http://localhost:9191/api/v1/auth/token \
+     -H "Content-Type: application/json" \
+     -d '{
+           "username": "johndoe",
+           "password": "securepassword"
+         }'
+```
+
+Use the session cookie stored in `cookies.txt` for subsequent requests that require authentication. This setup ensures secure handling of user sessions and simplifies credential management across multiple requests.
+
+These additions outline the processes of user registration and login, guiding users on how to interact with your e-commerce platform's authentication system. Let me know if you'd like further enhancements or additional details!
+
+
 #### 📦 Example of Product Service
 
 **Add New Product (Role Required: EMPLOYEE)**
@@ -184,7 +225,7 @@ Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are e
 To perform this operation, your user must be authenticated as an employee. Ensure your cookie with authentication details is included in the request.
 
 ```bash
-curl -X POST http://localhost:9191/api/products \
+curl -X POST http://localhost:9191/api/v1/products \
      -H "Content-Type: application/json" \
      -b "token=your_jwt_token" \
      -d '{
@@ -203,7 +244,7 @@ curl -X POST http://localhost:9191/api/products \
 To perform this operation, your user must be authenticated as a customer. Ensure your cookie with authentication details is included in the request.
 
 ```bash
-curl -X POST http://localhost:9191/api/order \
+curl -X POST http://localhost:9191/api/v1/order \
      -H "Content-Type: application/json" \
      -b "token=your_jwt_token" \
      -d '{
