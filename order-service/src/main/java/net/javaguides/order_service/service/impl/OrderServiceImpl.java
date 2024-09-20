@@ -17,6 +17,7 @@ import net.javaguides.order_service.entity.OrderItem;
 import net.javaguides.order_service.entity.OrderStatus;
 import net.javaguides.order_service.exception.OrderException;
 import net.javaguides.order_service.kafka.OrderProducer;
+import net.javaguides.order_service.paypal.PayPalService;
 import net.javaguides.order_service.repository.OrderRepository;
 import net.javaguides.order_service.service.OrderService;
 import net.javaguides.order_service.service.PaymentAPIClient;
@@ -28,8 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,15 +49,21 @@ public class OrderServiceImpl implements OrderService {
     private final StockAPIClient stockAPIClient;
     private final ProductAPIClient productAPIClient;
     private final PaymentAPIClient paymentAPIClient;
+    private final PayPalService payPalService;
 
     @Override
+    @Transactional
     public OrderDTO placeOrder(OrderRequestDto orderRequestDto, Long userId) {
         try {
-            OrderDTO newOrder = createOrderDTO(orderRequestDto, userId);
+            if(orderRequestDto.getPaymentMethod().equals("Paypal") && orderRequestDto.getOrderId() == null){
+                throw new OrderException("Please provide Paypal's ID", HttpStatus.BAD_REQUEST);
+            }
 
+            OrderDTO newOrder = createOrderDTO(orderRequestDto, userId);
             validateStockAndPrice(orderRequestDto, newOrder);
 
-            Order createdOrder = saveOrder(newOrder);
+            Order createdOrder = saveOrder(newOrder, orderRequestDto);
+
             sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod());
 
             return modelMapper.map(createdOrder, OrderDTO.class);
@@ -84,8 +94,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponseDto updateOrderStatus(String orderId, int version) {
         Order order = orderRepository.findById(orderId).orElse(null);
-        if(order != null){
-            if(order.getVersion() != version){
+        if (order != null) {
+            if (order.getVersion() != version) {
                 throw new OptimisticLockException("Version conflict!");
             }
 
@@ -104,6 +114,21 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
+    @Override
+    public OrderDTO cancelOrder(String orderId, Long userId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order != null && Objects.equals(order.getUserId(), userId)) {
+            order.setStatus(OrderStatus.CANCELED.getLabel());
+            ApiResponse<PaymentDto> paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody();
+            if(paymentDto != null && paymentDto.getData() != null && paymentDto.getData().getStatus().equals("Paypal")){
+                sendRefundOrderEvent(order);
+                payPalService.refundPayment(order.getOrderId());
+            }
+            return modelMapper.map(orderRepository.save(order), OrderDTO.class);
+        }
+        return null;
+    }
+
     private OrderEvent createOrderEvent(Order createdOrder, String paymentMethod) {
         OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
         OrderEvent orderEvent = new OrderEvent();
@@ -116,10 +141,10 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderDTO createOrderDTO(OrderRequestDto orderRequestDto, Long userId) {
         OrderDTO newOrder = modelMapper.map(orderRequestDto, OrderDTO.class);
-        newOrder.setOrderId(UUID.randomUUID().toString());
         newOrder.setUserId(userId);
         return newOrder;
     }
+
 
     private void validateStockAndPrice(OrderRequestDto orderRequestDto, OrderDTO newOrder) {
         Set<String> productIds = orderRequestDto.getOrderItems()
@@ -163,8 +188,19 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private Order saveOrder(OrderDTO newOrder) {
+    private Order saveOrder(OrderDTO newOrder, OrderRequestDto orderRequestDto) {
         Order order = modelMapper.map(newOrder, Order.class);
+        if ("Paypal".equalsIgnoreCase(orderRequestDto.getPaymentMethod())) {
+            BigDecimal amount = BigDecimal.valueOf(0);
+
+            for (OrderItemDTO orderItemDTO : orderRequestDto.getOrderItems()) {
+                BigDecimal itemTotal = orderItemDTO.getPrice().multiply(BigDecimal.valueOf(orderItemDTO.getQuantity()));
+                amount = amount.add(itemTotal);
+            }
+            order.setOrderId(orderRequestDto.getOrderId());
+        } else {
+            order.setOrderId(UUID.randomUUID().toString());
+        }
         order.setStatus(OrderStatus.PENDING.getLabel());
         for (OrderItem orderItem : order.getOrderItems()) {
             orderItem.setOrder(order);
@@ -177,6 +213,7 @@ public class OrderServiceImpl implements OrderService {
         orderProducer.sendMessage(orderEvent);
     }
 
+    // ! This method is deprecated.
     private OrderResponseDto createOrderResponseDto(Order createdOrder, OrderRequestDto orderRequestDto) {
         OrderResponseDto orderResponseDto = new OrderResponseDto();
         PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(createdOrder.getOrderId()).getBody().getData();
@@ -185,6 +222,13 @@ public class OrderServiceImpl implements OrderService {
         orderResponseDto.setOrderDTO(createdOrderDto);
         LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
         return orderResponseDto;
+    }
+
+    private void sendRefundOrderEvent(Order order){
+        OrderEvent orderEvent = new OrderEvent();
+        OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+        orderEvent.setOrderDTO(orderDTO);
+        orderEvent.setMessage("REFUND");
     }
 
 }

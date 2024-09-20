@@ -9,7 +9,8 @@ public enum OrderStatus {
     PENDING("Pending"),
     PROCESSING("Processing"),
     SHIPPING("Shipping"),
-    DELIVERED("Delivered");
+    DELIVERED("Delivered"),
+    CANCELED("Canceled");
 
     public final String label;
 }

@@ -9,4 +9,5 @@ public interface OrderService {
     OrderDTO placeOrder(OrderRequestDto order, Long userId);
     OrderResponseDto checkOrderStatusByOrderId(String orderId);
     OrderResponseDto updateOrderStatus(String orderId, int version);
+    OrderDTO cancelOrder(String orderId, Long userId);
 }
