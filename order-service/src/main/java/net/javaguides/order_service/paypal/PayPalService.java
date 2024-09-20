@@ -1,6 +1,7 @@
 package net.javaguides.order_service.paypal;
 
 import lombok.RequiredArgsConstructor;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class PayPalService {
 
     @Value("${paypal.client-secret}")
     public static String CLIENT_SECRET;
+
+    private static final String PAYPAL_API = "https://api.sandbox.paypal.com/v2/checkout/orders/";
+    //*
     public void refundPayment(String captureId) {
        try {
            URL url = new URL("https://api.sandbox.paypal.com/v2/payments/captures/" + captureId + "/refund");
@@ -32,6 +36,43 @@ public class PayPalService {
        }catch(Exception e){
            throw new RuntimeException("Refund failed: " + e.getMessage());
        }
+    }
+
+    public String getCaptureIdFromOrder(String orderId) throws Exception {
+        URL url = new URL(PAYPAL_API + orderId);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization", "Bearer " + getAccessToken());
+        connection.setRequestProperty("Content-Type", "application/json");
+
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+
+                JSONObject jsonResponse = new JSONObject(response.toString());
+
+                JSONArray purchaseUnits = jsonResponse.getJSONArray("purchase_units");
+                JSONObject payments = purchaseUnits.getJSONObject(0).getJSONObject("payments");
+                if (payments.has("captures")) {
+                    JSONArray captures = payments.getJSONArray("captures");
+                    for (int i = 0; i < captures.length(); i++) {
+                        JSONObject capture = captures.getJSONObject(i);
+                        String status = capture.getString("status");
+                        if ("COMPLETED".equals(status)) {
+                            return capture.getString("id");
+                        }
+                    }
+                }
+            }
+        } else {
+            throw new RuntimeException("Failed to retrieve order details from PayPal.");
+        }
+        return null;
     }
 
     private int getResponseCode(URL url) throws Exception {
@@ -46,8 +87,7 @@ public class PayPalService {
             os.write(input, 0, input.length);
         }
 
-        int responseCode = connection.getResponseCode();
-        return responseCode;
+        return connection.getResponseCode();
     }
 
     // Lấy access token

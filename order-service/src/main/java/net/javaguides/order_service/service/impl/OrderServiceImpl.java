@@ -114,15 +114,23 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
+    //* Pre Authorized: ADMINISTRATOR, EMPLOYEE
     @Override
     public OrderDTO cancelOrder(String orderId, Long userId) {
         Order order = orderRepository.findById(orderId).orElse(null);
-        if (order != null && Objects.equals(order.getUserId(), userId)) {
+        if (order != null) {
             order.setStatus(OrderStatus.CANCELED.getLabel());
             ApiResponse<PaymentDto> paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody();
             if(paymentDto != null && paymentDto.getData() != null && paymentDto.getData().getStatus().equals("Paypal")){
-                sendRefundOrderEvent(order);
-                payPalService.refundPayment(order.getOrderId());
+                try {
+                    String captureId = payPalService.getCaptureIdFromOrder(orderId);
+                    if(captureId != null){
+                        sendRefundOrderEvent(order);
+                        payPalService.refundPayment(captureId);
+                    }
+                }catch(Exception e){
+                    throw new OrderException("No captures found for this order. Refund cannot be processed.", HttpStatus.BAD_REQUEST);
+                }
             }
             return modelMapper.map(orderRepository.save(order), OrderDTO.class);
         }
@@ -214,15 +222,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // ! This method is deprecated.
-    private OrderResponseDto createOrderResponseDto(Order createdOrder, OrderRequestDto orderRequestDto) {
-        OrderResponseDto orderResponseDto = new OrderResponseDto();
-        PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(createdOrder.getOrderId()).getBody().getData();
-        OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
-        orderResponseDto.setPaymentDto(paymentDto);
-        orderResponseDto.setOrderDTO(createdOrderDto);
-        LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
-        return orderResponseDto;
-    }
+//    private OrderResponseDto createOrderResponseDto(Order createdOrder, OrderRequestDto orderRequestDto) {
+//        OrderResponseDto orderResponseDto = new OrderResponseDto();
+//        PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(createdOrder.getOrderId()).getBody().getData();
+//        OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
+//        orderResponseDto.setPaymentDto(paymentDto);
+//        orderResponseDto.setOrderDTO(createdOrderDto);
+//        LOGGER.info("Order created successfully with ID: {}", createdOrder.getOrderId());
+//        return orderResponseDto;
+//    }
 
     private void sendRefundOrderEvent(Order order){
         OrderEvent orderEvent = new OrderEvent();

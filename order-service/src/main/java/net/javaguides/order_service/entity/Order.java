@@ -1,5 +1,6 @@
 package net.javaguides.order_service.entity;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +26,9 @@ public class Order extends AbstractEntity {
     private List<OrderItem> orderItems;
 
     private Long userId;
+
+    @Nullable
+    private String captureId;
 }
 
 
