@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum PaymentStatus {
     PENDING("Pending"),
     SUCCESS("Success"),
-    FAILED("Failed");
+    FAILED("Failed"),
+    REFUND("Refund");
 
     public final String label;
 }

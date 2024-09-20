@@ -2,6 +2,7 @@ package net.javaguides.payment_service.kafka;
 
 
 import net.javaguides.common_lib.dto.order.OrderEvent;
+import net.javaguides.payment_service.entity.PaymentStatus;
 import net.javaguides.payment_service.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,16 @@ public class OrderConsumer {
     public void consume(OrderEvent orderEvent){
         try {
             LOGGER.info(String.format("OrderDTO event received in payment service -> %s", orderEvent.toString()));
+
+            if(orderEvent.getMessage().equals("REFUND")){
+                paymentService.refundPayment(orderEvent.getOrderDTO().getOrderId());
+                return;
+            }
+
+            if(orderEvent.getMessage().equals("PAID")){
+                paymentService.updateStatusPayment(orderEvent.getOrderDTO().getOrderId(), PaymentStatus.SUCCESS);
+                return;
+            }
 
             paymentService.createPayment(orderEvent);
 

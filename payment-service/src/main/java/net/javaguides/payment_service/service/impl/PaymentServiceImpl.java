@@ -51,8 +51,25 @@ public class PaymentServiceImpl implements PaymentService {
         return null;
     }
 
+
+
     @Override
-    public PaymentDto updateStatusPayment(String orderId, String status) {
-        return null;
+    public void updateStatusPayment(String orderId, PaymentStatus status) {
+        Payment existingPayment = paymentRepository.findByOrderId(orderId);
+        if(existingPayment != null){
+            existingPayment.setStatus(status);
+            paymentRepository.save(existingPayment);
+        }
+        System.out.println("Khong tim thay payment!");
+    }
+
+    @Override
+    public void refundPayment(String orderId) {
+        Payment existingPayment = paymentRepository.findByOrderId(orderId);
+        if(existingPayment != null){
+            existingPayment.setStatus(PaymentStatus.REFUND);
+            paymentRepository.save(existingPayment);
+        }
+        System.out.println("Khong tim thay payment!");
     }
 }
