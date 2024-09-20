@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/e56d8eb1-0fd1-4999-8597-b2100f93b712)
+
 # E-commerce Backend Microservices Project (Dockerized) 🚀
 
 ## Introduction 🌟
