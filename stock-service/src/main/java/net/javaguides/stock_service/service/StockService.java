@@ -20,4 +20,6 @@ public interface StockService {
     Stock updateStockQuantity(String productId, int quantity);
 
     void deleteProductStock(String productId);
+
+    void revertStockBasedOnCanceledOrder(OrderEvent orderEvent);
 }

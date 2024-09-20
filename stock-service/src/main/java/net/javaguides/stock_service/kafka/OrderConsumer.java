@@ -22,7 +22,10 @@ public class OrderConsumer {
     public void consume(OrderEvent orderEvent){
         try {
             LOGGER.info(String.format("OrderDTO event received in stock service -> %s", orderEvent.toString()));
-
+            if(orderEvent.getMessage().equals("REFUND")){
+                stockService.revertStockBasedOnCanceledOrder(orderEvent);
+                return;
+            }
             stockService.updateStockBasedOrder(orderEvent);
         }catch(Exception e){
            LOGGER.warn(String.format("Error message -> %s", e.getMessage()));

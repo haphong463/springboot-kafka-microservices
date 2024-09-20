@@ -1,4 +1,5 @@
 package net.javaguides.stock_service.service.impl;
+import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
@@ -14,12 +15,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class StockServiceImpl implements StockService {
-    private StockRepository stockRepository;
+    private final StockRepository stockRepository;
 
-    public StockServiceImpl(StockRepository stockRepository) {
-        this.stockRepository = stockRepository;
-    }
 
     @Override
     public void createProductStock(ProductEvent productEvent) {
@@ -93,5 +92,25 @@ public class StockServiceImpl implements StockService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void revertStockBasedOnCanceledOrder(OrderEvent orderEvent) {
+        Map<String, Integer> productQuantityMap = orderEvent.getOrderDTO().getOrderItems().stream()
+                .collect(Collectors.toMap(OrderItemDTO::getProductId, OrderItemDTO::getQuantity, Integer::sum));
+
+        // Lấy tất cả các bản ghi Stock liên quan trong một truy vấn
+        List<Stock> stocks = stockRepository.findAllByProductIdIn(productQuantityMap.keySet());
+
+        List<Stock> stocksToUpdate = new ArrayList<>();
+
+        for (Stock stock : stocks) {
+            Integer orderedQuantity = productQuantityMap.get(stock.getProductId());
+                stock.setQty(stock.getQty() + orderedQuantity);
+                stocksToUpdate.add(stock);
+        }
+
+        // Lưu tất cả các bản ghi đã cập nhật trong một lần
+        stockRepository.saveAll(stocksToUpdate);
     }
 }
