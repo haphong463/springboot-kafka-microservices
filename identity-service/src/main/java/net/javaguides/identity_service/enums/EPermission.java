@@ -1,4 +1,11 @@
 package net.javaguides.identity_service.enums;
 
-public class EPermission {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
+public enum EPermission {
+    VIEW_PRODUCTS, SEARCH_PRODUCTS, PLACE_ORDERS, VIEW_OWN_ORDERS, RATE_PRODUCT, EDIT_OWN_PROFILE,
+    MANAGE_PRODUCTS, MANAGE_INVENTORY, PROCESS_ORDERS, CANCEL_ORDERS, MANAGE_RETURNS, VIEW_ALL_ORDERS, RESPOND_TO_CUSTOMER_QUERIES, MANAGE_PROMOTIONS, EDIT_CUSTOMER_PROFILES
 }
