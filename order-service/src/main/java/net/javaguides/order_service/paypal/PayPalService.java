@@ -29,8 +29,7 @@ public class PayPalService {
        try {
            URL url = new URL("https://api.sandbox.paypal.com/v2/payments/captures/" + captureId + "/refund");
            int responseCode = getResponseCode(url);
-           if (responseCode == HttpURLConnection.HTTP_CREATED) {
-           } else {
+           if (responseCode != HttpURLConnection.HTTP_CREATED) {
                throw new RuntimeException("Refund failed with response code: " + responseCode);
            }
        }catch(Exception e){
