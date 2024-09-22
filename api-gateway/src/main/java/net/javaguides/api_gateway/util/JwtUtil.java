@@ -24,19 +24,34 @@ public class JwtUtil {
     // Extract roles from the token
     public List<String> extractRoles(String token) {
         Claims claims = getClaims(token);
-        List<Map<String, String>> rolesClaim = claims.get("roles", List.class);
+        List<String> rolesClaim = claims.get("roles", List.class);
 
         List<String> roles = new ArrayList<>();
         if (rolesClaim != null) {
-            for (Map<String, String> roleMap : rolesClaim) {
-                String authority = roleMap.get("authority");
-                if (authority != null) {
-                    roles.add(authority);
+            for (String role : rolesClaim) {
+                if (role != null) {
+                    roles.add(role);
                 }
             }
         }
         return roles;
     }
+
+    public List<String> extractPermissions(String token) {
+        Claims claims = getClaims(token);
+        List<String> permissionClaim = claims.get("permissions", List.class);
+
+        List<String> permissions = new ArrayList<>();
+        if (permissionClaim != null) {
+            for (String permission : permissionClaim) {
+                if (permission != null) {
+                    permissions.add(permission);
+                }
+            }
+        }
+        return permissions;
+    }
+
 
     private Claims getClaims(String token) {
         return Jwts.parser()

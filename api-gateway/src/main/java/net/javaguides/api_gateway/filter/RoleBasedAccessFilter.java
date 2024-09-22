@@ -34,33 +34,39 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
-            HttpMethod requestMethod = request.getMethod();
 
             // Kiểm tra xem phương thức HTTP có nằm trong danh sách được bảo vệ không
-            if (config.getMethods() != null && config.getMethods().contains(requestMethod.name())) {
-                // Trích xuất token từ cookie
-                String token = extractTokenFromCookies(request);
+            // Trích xuất token từ cookie
+            String token = extractTokenFromCookies(request);
 
-                if (token == null) {
-                    return onError(exchange, "Missing or invalid token", HttpStatus.UNAUTHORIZED);
-                }
-
-                try {
-                    // Xác thực token
-                    jwtUtil.validateToken(token);
-
-                    // Trích xuất vai trò từ token
-                    List<String> roles = jwtUtil.extractRoles(token);
-
-                    // Kiểm tra vai trò của người dùng
-                    boolean hasRole = roles.stream().anyMatch(config.getRequiredRoles()::contains);
-                    if (!hasRole) {
-                        return onError(exchange, "Forbidden access", HttpStatus.FORBIDDEN);
-                    }
-                } catch (Exception e) {
-                    return onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
-                }
+            if (token == null) {
+                return onError(exchange, "Missing or invalid token", HttpStatus.UNAUTHORIZED);
             }
+
+            try {
+                // Xác thực token
+                jwtUtil.validateToken(token);
+
+                // Trích xuất vai trò từ token
+                List<String> roles = jwtUtil.extractRoles(token);
+                List<String> permissions = jwtUtil.extractPermissions(token);
+                // Kiểm tra vai trò của người dùng
+                boolean hasRole = roles.stream().anyMatch(config.getRequiredRoles()::contains);
+
+
+                // Kiểm tra vai trò của người dùng
+                boolean hasPermission = permissions.stream().anyMatch(config.getRequiredPermissions()::contains);
+                if (!hasRole) {
+                    return onError(exchange, "Forbidden access", HttpStatus.FORBIDDEN);
+                }
+                if(!hasPermission){
+                    return onError(exchange, "You don't have permission to do this.", HttpStatus.UNAUTHORIZED);
+                }
+
+            } catch (Exception e) {
+                return onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
+            }
+
 
             return chain.filter(exchange);
         };
@@ -86,10 +92,19 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
     }
 
     public static class Config {
+        private List<String> requiredPermissions;
         private List<String> requiredRoles;
         private List<String> methods;
 
         // Getters and Setters
+
+        public List<String> getRequiredPermissions() {
+            return requiredPermissions;
+        }
+
+        public void setRequiredPermissions(List<String> requiredPermissions) {
+            this.requiredPermissions = requiredPermissions;
+        }
 
         public List<String> getRequiredRoles() {
             return requiredRoles;
@@ -97,14 +112,6 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
 
         public void setRequiredRoles(List<String> requiredRoles) {
             this.requiredRoles = requiredRoles;
-        }
-
-        public List<String> getMethods() {
-            return methods;
-        }
-
-        public void setMethods(List<String> methods) {
-            this.methods = methods;
         }
     }
 }
