@@ -5,17 +5,15 @@ import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
+import net.javaguides.product_service.dto.*;
 import net.javaguides.product_service.redis.ProductRedis;
-import net.javaguides.product_service.dto.ProductResponseDto;
-import net.javaguides.product_service.dto.ProductStockResponse;
-import net.javaguides.product_service.dto.ProductUpdateDto;
-import net.javaguides.product_service.dto.StockResponseDto;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.kafka.ProductProducer;
 import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.ProductService;
 import net.javaguides.product_service.service.StockAPIClient;
+import net.javaguides.product_service.service.StorageService;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,13 +39,18 @@ public class ProductServiceImpl implements ProductService {
     private final StockAPIClient stockAPIClient;
     private final ModelMapper modelMapper;
     private final ProductRedis productDAO;
+    private final StorageService storageService;
 
     @Override
-    public ProductStockResponse saveProduct(ProductDTO productDTO) {
+    public ProductStockResponse saveProduct(CreateProductRequestDto createProductRequestDto) {
         try {
+            ProductDTO productDTO = modelMapper.map(createProductRequestDto, ProductDTO.class);
+
             Product product = mapToEntity(productDTO);
             product.setId(UUID.randomUUID().toString());
-
+            String fileName = System.currentTimeMillis() + "_" + createProductRequestDto.getMultipartFile().getOriginalFilename();
+            storageService.uploadFile(createProductRequestDto.getMultipartFile(), fileName);
+            product.setImageUrl(fileName);
             Product savedProduct = productRepository.save(product);
             ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
             productProducer.sendMessage(productEvent);

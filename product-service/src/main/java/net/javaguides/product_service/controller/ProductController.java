@@ -6,13 +6,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
+import net.javaguides.product_service.dto.CreateProductRequestDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
+import net.javaguides.product_service.service.StorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Set;
@@ -23,9 +26,9 @@ import java.util.Set;
 public class ProductController {
     private final ProductService productService;
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> saveProduct(@RequestBody @Valid ProductDTO productDTO) {
+    public ResponseEntity<ApiResponse<?>> saveProduct(@ModelAttribute CreateProductRequestDto createProductRequestDto) {
         try {
-            ProductStockResponse createdProductDto = productService.saveProduct(productDTO);
+            ProductStockResponse createdProductDto = productService.saveProduct(createProductRequestDto);
             ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -109,4 +112,6 @@ public class ProductController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 }
