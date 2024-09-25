@@ -44,7 +44,7 @@ public class OrderController {
             ApiResponse<UserDto> user = authenticationAPIClient.getCurrentUser(cookie).getBody();
             if (user != null && user.getData() != null) {
                 // Place order with authenticated user's ID
-                return new ResponseEntity<>(new ApiResponse<>(orderService.placeOrder(order, user.getData().getId()), HttpStatus.CREATED.value()), HttpStatus.CREATED);
+                return new ResponseEntity<>(new ApiResponse<>(orderService.placeOrder(order, user.getData().getId(), user.getData().getEmail()), HttpStatus.CREATED.value()), HttpStatus.CREATED);
             }
             // Return if user not found
             return new ResponseEntity<>(new ApiResponse<>("User not found!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);

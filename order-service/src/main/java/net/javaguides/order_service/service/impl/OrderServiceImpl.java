@@ -53,7 +53,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDTO placeOrder(OrderRequestDto orderRequestDto, Long userId) {
+    public OrderDTO placeOrder(OrderRequestDto orderRequestDto, Long userId, String email) {
         try {
             if(orderRequestDto.getPaymentMethod().equals("Paypal") && orderRequestDto.getOrderId() == null){
                 throw new OrderException("Please provide Paypal's ID", HttpStatus.BAD_REQUEST);
@@ -64,7 +64,7 @@ public class OrderServiceImpl implements OrderService {
 
             Order createdOrder = saveOrder(newOrder, orderRequestDto);
 
-            sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod());
+            sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod(), email);
 
             return modelMapper.map(createdOrder, OrderDTO.class);
         } catch (OrderException e) {
@@ -137,13 +137,14 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
-    private OrderEvent createOrderEvent(Order createdOrder, String paymentMethod) {
+    private OrderEvent createOrderEvent(Order createdOrder, String paymentMethod, String email) {
         OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);
         OrderEvent orderEvent = new OrderEvent();
         orderEvent.setOrderDTO(createdOrderDto);
         orderEvent.setStatus("PENDING");
         orderEvent.setMessage("Order status is in pending state");
         orderEvent.setPaymentMethod(paymentMethod);
+        orderEvent.setEmail(email);
         return orderEvent;
     }
 
@@ -216,8 +217,8 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
-    private void sendOrderEvent(Order createdOrder, String paymentMethod) {
-        OrderEvent orderEvent = createOrderEvent(createdOrder, paymentMethod);
+    private void sendOrderEvent(Order createdOrder, String paymentMethod, String email) {
+        OrderEvent orderEvent = createOrderEvent(createdOrder, paymentMethod, email);
         orderProducer.sendMessage(orderEvent);
     }
 
