@@ -33,6 +33,17 @@ services:
       - shop-network
 
 
+  # Redis
+  redis:
+    image: redis:7.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - shop-network
+
   # MySQL for Order Service
   mysql-order-service:
     image: mysql:8.0
@@ -188,6 +199,9 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_TIMEOUT: 60000
     networks:
       - shop-network
 
@@ -235,6 +249,7 @@ volumes:
   mysql-product-service-data:
   mysql-payment-service-data:
   mysql-stock-service-data:
+  redis-data:
 networks:
   shop-network:
     driver: bridge
