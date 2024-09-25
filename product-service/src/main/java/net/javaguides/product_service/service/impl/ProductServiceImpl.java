@@ -145,14 +145,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductStockResponse updateProduct(String id, ProductDTO productDTO, int version) {
+    public ProductStockResponse updateProduct(String id, ProductUpdateDto productUpdateDto, int version) {
         return productRepository.findById(id)
                 .map(existingProduct -> {
                     if (existingProduct.getVersion() != version) {
                         throw new ProductException("Version conflict! Current version: "
                                 + existingProduct.getVersion(), HttpStatus.CONFLICT);
                     }
-                    return updateAndSaveProduct(existingProduct, productDTO);
+                    return updateAndSaveProduct(existingProduct, productUpdateDto);
                 })
                 .orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
     }
@@ -218,15 +218,14 @@ public class ProductServiceImpl implements ProductService {
         return response;
     }
 
-    private ProductStockResponse updateAndSaveProduct(Product existingProduct, ProductDTO productDTO) {
-        ProductUpdateDto productUpdateDto = modelMapper.map(productDTO, ProductUpdateDto.class);
+    private ProductStockResponse updateAndSaveProduct(Product existingProduct, ProductUpdateDto productUpdateDto) {
         modelMapper.map(productUpdateDto, existingProduct);
 
         Product savedProduct = productRepository.save(existingProduct);
-        ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.UPDATE);
+        ProductEvent productEvent = createProductEvent(savedProduct, productUpdateDto.getStockQuantity(), ProductMethod.UPDATE);
         productProducer.sendMessage(productEvent);
 
-        return buildProductStockResponse(savedProduct, productDTO.getStockQuantity());
+        return buildProductStockResponse(savedProduct, productUpdateDto.getStockQuantity());
     }
 
     private Product getExistingProductInCache(String id) {

@@ -2,11 +2,13 @@ package net.javaguides.product_service.controller;
 
 
 import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.product_service.dto.CreateProductRequestDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
+import net.javaguides.product_service.dto.ProductUpdateDto;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.http.HttpHeaders;
@@ -23,7 +25,7 @@ import java.util.Set;
 public class ProductController {
     private final ProductService productService;
     @PostMapping
-    public ResponseEntity<ApiResponse<?>> saveProduct(@ModelAttribute CreateProductRequestDto createProductRequestDto) {
+    public ResponseEntity<ApiResponse<?>> saveProduct(@ModelAttribute @Valid CreateProductRequestDto createProductRequestDto) {
         try {
             ProductStockResponse createdProductDto = productService.saveProduct(createProductRequestDto);
             ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
@@ -64,7 +66,7 @@ public class ProductController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductDTO productDTO, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
+    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductUpdateDto productDTO, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
         try {
             ProductStockResponse productStockResponse = productService.updateProduct(id, productDTO, version);
             ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
