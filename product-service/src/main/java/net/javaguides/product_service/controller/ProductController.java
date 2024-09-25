@@ -2,7 +2,6 @@ package net.javaguides.product_service.controller;
 
 
 import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
@@ -10,12 +9,10 @@ import net.javaguides.product_service.dto.CreateProductRequestDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
-import net.javaguides.product_service.service.StorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Set;
@@ -38,9 +35,11 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getProductList() {
+    public ResponseEntity<ApiResponse<?>> getProductList(@RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "10") int size
+    ) {
         try {
-            List<ProductStockResponse> productList = productService.getProductList();
+            List<ProductStockResponse> productList = productService.getProductList(page, size);
             ApiResponse<List<ProductStockResponse>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (Exception e) {

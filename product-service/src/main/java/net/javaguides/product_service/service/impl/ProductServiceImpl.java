@@ -1,5 +1,6 @@
 package net.javaguides.product_service.service.impl;
 
+import io.netty.util.concurrent.CompleteFuture;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
@@ -11,16 +12,18 @@ import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.kafka.ProductProducer;
 import net.javaguides.product_service.repository.ProductRepository;
+import net.javaguides.product_service.service.CloudinaryService;
 import net.javaguides.product_service.service.ProductService;
 import net.javaguides.product_service.service.StockAPIClient;
-import net.javaguides.product_service.service.StorageService;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -28,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,19 +43,36 @@ public class ProductServiceImpl implements ProductService {
     private final StockAPIClient stockAPIClient;
     private final ModelMapper modelMapper;
     private final ProductRedis productDAO;
-    private final StorageService storageService;
+    private final CloudinaryService cloudinaryService;
 
+    @Value("${cloudinary.cloud_name}")
+    private String cloudName;
+
+    public String getFileExtension(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null && originalFilename.contains(".")) {
+            return originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        } else {
+            return "";
+        }
+    }
     @Override
+    @Transactional
     public ProductStockResponse saveProduct(CreateProductRequestDto createProductRequestDto) {
         try {
-            ProductDTO productDTO = modelMapper.map(createProductRequestDto, ProductDTO.class);
+            String publicId = System.currentTimeMillis() + "_" + createProductRequestDto.getMultipartFile().getOriginalFilename().replace(".jpg", "");
+            String preUrl = "https://res.cloudinary.com/" + cloudName + "/image/upload/" + publicId + "." + getFileExtension(createProductRequestDto.getMultipartFile());
 
+            // Map DTO sang Product entity
+            ProductDTO productDTO = modelMapper.map(createProductRequestDto, ProductDTO.class);
             Product product = mapToEntity(productDTO);
             product.setId(UUID.randomUUID().toString());
-            String fileName = System.currentTimeMillis() + "_" + createProductRequestDto.getMultipartFile().getOriginalFilename();
-            storageService.uploadFile(createProductRequestDto.getMultipartFile(), fileName);
-            product.setImageUrl(fileName);
+            product.setImageUrl(preUrl);
             Product savedProduct = productRepository.save(product);
+
+
+            cloudinaryService.uploadFile(createProductRequestDto.getMultipartFile(), publicId);
+
             ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
             productProducer.sendMessage(productEvent);
             return buildProductStockResponse(savedProduct, productDTO.getStockQuantity());
@@ -59,6 +80,7 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductException("Failed to create product: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     @Override
     public ProductStockResponse getProductById(String id) {
@@ -97,11 +119,13 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public List<ProductStockResponse> getProductList() {
-        List<ProductResponseDto> productDtos = productRepository.findAll()
+    public List<ProductStockResponse> getProductList(int page, int size) {
+        Page<Product> productPage = productRepository.findAll(PageRequest.of(page, size));
+
+        List<ProductResponseDto> productDtos = productPage.getContent()
                 .stream()
                 .map(product -> modelMapper.map(product, ProductResponseDto.class))
-                .toList();
+                .collect(Collectors.toList());
 
         Set<String> productIds = productDtos.stream()
                 .map(ProductResponseDto::getId)

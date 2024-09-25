@@ -13,7 +13,7 @@ import java.util.Set;
 public interface ProductService {
     ProductStockResponse saveProduct(CreateProductRequestDto createProductRequestDto);
     ProductStockResponse getProductById(String id);
-    List<ProductStockResponse> getProductList();
+    List<ProductStockResponse> getProductList(int page, int size);
     ProductStockResponse updateProduct(String id, ProductDTO productDTO, int version);
     ProductDTO deleteProduct(String id);
     List<ProductDTO> getProductsByIds(Set<String> productIds);

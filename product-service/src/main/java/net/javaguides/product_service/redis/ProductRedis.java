@@ -15,7 +15,9 @@ public class ProductRedis {
 
     public void save(Product productDTO){
         try {
-            redisTemplate.opsForHash().put(HASH_KEY, productDTO.getId(), productDTO);
+            if(productDTO.getImageUrl() != null){
+                redisTemplate.opsForHash().put(HASH_KEY, productDTO.getId(), productDTO);
+            }
         }catch(Exception e){
             throw new RuntimeException("Error to save product in redis: " + e.getMessage());
         }
