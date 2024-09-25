@@ -3,6 +3,8 @@ package net.javaguides.api_gateway.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javaguides.api_gateway.util.JwtUtil;
 import net.javaguides.common_lib.dto.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -15,11 +17,14 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Component
 public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBasedAccessFilter.Config> {
 
+    private static final Logger log = LoggerFactory.getLogger(RoleBasedAccessFilter.class);
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -52,18 +57,22 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
                 List<String> permissions = jwtUtil.extractPermissions(token);
                 // Kiểm tra vai trò của người dùng
                 boolean hasRole = roles.stream().anyMatch(config.getRequiredRoles()::contains);
-
-
                 // Kiểm tra vai trò của người dùng
                 boolean hasPermission = permissions.stream().anyMatch(config.getRequiredPermissions()::contains);
                 if (!hasRole) {
                     return onError(exchange, "Forbidden access", HttpStatus.FORBIDDEN);
                 }
+
+                if(config.getRequiredPermissions().size() == 0){
+                    return chain.filter(exchange);
+                }
+
                 if(!hasPermission){
                     return onError(exchange, "You don't have permission to do this.", HttpStatus.UNAUTHORIZED);
                 }
 
             } catch (Exception e) {
+                log.error(e.getMessage());
                 return onError(exchange, "Unauthorized access", HttpStatus.UNAUTHORIZED);
             }
 
@@ -96,10 +105,16 @@ public class RoleBasedAccessFilter extends AbstractGatewayFilterFactory<RoleBase
         private List<String> requiredRoles;
         private List<String> methods;
 
-        // Getters and Setters
+        public List<String> getMethods() {
+            return methods;
+        }
+
+        public void setMethods(List<String> methods) {
+            this.methods = methods;
+        }
 
         public List<String> getRequiredPermissions() {
-            return requiredPermissions;
+            return requiredPermissions != null ? requiredPermissions : Collections.emptyList();
         }
 
         public void setRequiredPermissions(List<String> requiredPermissions) {
