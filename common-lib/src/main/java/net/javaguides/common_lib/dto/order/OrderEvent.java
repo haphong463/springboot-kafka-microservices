@@ -12,4 +12,5 @@ public class OrderEvent {
     private String status;
     private OrderDTO orderDTO;
     private String paymentMethod;
+    private String email;
 }
