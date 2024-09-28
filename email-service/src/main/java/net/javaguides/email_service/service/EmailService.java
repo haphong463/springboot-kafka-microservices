@@ -2,13 +2,9 @@ package net.javaguides.email_service.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
-import net.javaguides.common_lib.dto.order.OrderDTO;
-import net.javaguides.common_lib.dto.order.OrderEmailDto;
 import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.common_lib.dto.order.OrderItemDTO;
-import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.email_service.dto.ProductStockResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -82,6 +78,7 @@ public class EmailService {
                     String formattedTotalPrice = currencyFormatter.format(totalPrice);
 
                     orderItemsHtmlBuilder.append("<tr>")
+                            .append("<td><img width='100' height='100' src='").append(productResponse.getData().getProduct().getImageUrl()).append("' alt='Product Image'/></td>")
                             .append("<td>").append(productResponse.getData().getProduct().getName()).append("</td>")
                             .append("<td>").append(item.getQuantity()).append("</td>")
                             .append("<td>").append(formattedUnitPrice).append("</td>")
@@ -102,7 +99,7 @@ public class EmailService {
             Map<String, String> variables = Map.of(
                     "customerName", order.getEmail(),
                     "orderId", order.getOrderDTO().getOrderId(),
-                    "orderDate", String.valueOf(new Date()),
+                    "orderDate", order.getOrderDTO().getCreatedAt().toString(),
                     "orderItems", orderItemsHtml,
                     "grandTotal", formattedGrandTotal,
                     "actionUrl", "https://yourapp.com/orders/" + order.getOrderDTO().getOrderId()
