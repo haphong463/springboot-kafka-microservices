@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.haphong463</groupId>
 	<artifactId>common-lib</artifactId>
-	<version>1.0.6</version>
+	<version>1.0.7</version>
 	<name>common-lib</name>
 	<description>Demo project for Spring Boot common-lib</description>
 	<url/>
