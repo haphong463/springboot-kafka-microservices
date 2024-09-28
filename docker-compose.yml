@@ -164,6 +164,21 @@ services:
     networks:
       - shop-network
 
+  email-service:
+    image: springboot-kafka-microservices/email-service:latest
+    container_name: email-service
+    depends_on:
+      - kafka
+      - eureka-server
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - shop-network
+
   payment-service:
     image: springboot-kafka-microservices/payment-service:latest
     container_name: payment-service
