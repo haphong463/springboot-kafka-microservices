@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.Duration;
+
 @Repository
 public class ProductRedis {
     private static final String HASH_KEY = "Product";
@@ -13,10 +15,11 @@ public class ProductRedis {
     @Autowired
     private RedisTemplate redisTemplate;
 
-    public void save(Product productDTO){
+    public void save(Product product){
         try {
-            if(productDTO.getImageUrl() != null){
-                redisTemplate.opsForHash().put(HASH_KEY, productDTO.getId(), productDTO);
+            if(product.getImageUrl() != null){
+                redisTemplate.opsForHash().put(HASH_KEY, product.getId(), product);
+                redisTemplate.expire(HASH_KEY, Duration.ofHours(1));
             }
         }catch(Exception e){
             throw new RuntimeException("Error to save product in redis: " + e.getMessage());

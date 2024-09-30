@@ -70,6 +70,7 @@ public class ProductServiceImpl implements ProductService {
             product.setImageUrl(preUrl);
             Product savedProduct = productRepository.save(product);
 
+            productDAO.save(savedProduct);
 
             cloudinaryService.uploadFile(createProductRequestDto.getMultipartFile(), publicId);
 
@@ -88,8 +89,8 @@ public class ProductServiceImpl implements ProductService {
         ProductResponseDto productResponseDto;
 
         if (existingProductInCache != null) {
-            LOGGER.info("ProductServiceImpl.getProductById(): cache post >> " + existingProductInCache.toString());
             productResponseDto = modelMapper.map(existingProductInCache, ProductResponseDto.class);
+            LOGGER.info("ProductServiceImpl.getProductById(): cache post >> " + existingProductInCache.toString());
         } else {
 
 
@@ -124,7 +125,13 @@ public class ProductServiceImpl implements ProductService {
 
         List<ProductResponseDto> productDtos = productPage.getContent()
                 .stream()
-                .map(product -> modelMapper.map(product, ProductResponseDto.class))
+                .map(product -> {
+                    Product productInCache = getExistingProductInCache(product.getId());
+                    if(productInCache == null){
+                        productDAO.save(product);
+                    }
+                    return modelMapper.map(product, ProductResponseDto.class);
+                })
                 .collect(Collectors.toList());
 
         Set<String> productIds = productDtos.stream()

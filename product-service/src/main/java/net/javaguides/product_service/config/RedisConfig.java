@@ -42,7 +42,6 @@ public class RedisConfig {
         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer()); // Using JSON serialization
         template.setEnableTransactionSupport(true);
         template.afterPropertiesSet();
-        template.expire("Product", Duration.ofHours(1)); // Adjust the TTL as needed
         return template;
     }
 
