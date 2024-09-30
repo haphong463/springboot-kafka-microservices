@@ -18,6 +18,7 @@ import net.javaguides.order_service.entity.OrderStatus;
 import net.javaguides.order_service.exception.OrderException;
 import net.javaguides.order_service.kafka.OrderProducer;
 import net.javaguides.order_service.paypal.PayPalService;
+import net.javaguides.order_service.redis.OrderRedis;
 import net.javaguides.order_service.repository.OrderRepository;
 import net.javaguides.order_service.service.OrderService;
 import net.javaguides.order_service.service.PaymentAPIClient;
@@ -27,13 +28,14 @@ import net.javaguides.order_service.service.state.OrderContext;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,6 +52,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductAPIClient productAPIClient;
     private final PaymentAPIClient paymentAPIClient;
     private final PayPalService payPalService;
+    private final OrderRedis orderRedis;
 
     @Override
     @Transactional
@@ -63,6 +66,8 @@ public class OrderServiceImpl implements OrderService {
             validateStockAndPrice(orderRequestDto, newOrder);
 
             Order createdOrder = saveOrder(newOrder, orderRequestDto);
+            orderRedis.save(modelMapper.map(createdOrder, OrderDTO.class));
+
 
             sendOrderEvent(createdOrder, orderRequestDto.getPaymentMethod(), email);
 
@@ -77,7 +82,22 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponseDto checkOrderStatusByOrderId(String orderId) {
-        Order order = orderRepository.findById(orderId).orElse(null);
+        // Kiểm tra từ Redis cache
+        OrderDTO cachedOrder = orderRedis.findByOrderId(orderId);
+        OrderDTO order;
+
+        if (cachedOrder != null) {
+            order = cachedOrder;
+            LOGGER.info("Order retrieved from Redis cache.");
+        } else {
+            // Nếu không tìm thấy trong cache, truy vấn cơ sở dữ liệu và lưu vào cache
+            order = modelMapper.map(orderRepository.findById(orderId).orElse(null), OrderDTO.class);
+            if (order != null) {
+                orderRedis.save(order);
+                LOGGER.info("Order retrieved from DB and saved to Redis cache.");
+            }
+        }
+
         if (order != null) {
             OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
             PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody().getData();
@@ -91,6 +111,7 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
+
     @Override
     public OrderResponseDto updateOrderStatus(String orderId, int version) {
         Order order = orderRepository.findById(orderId).orElse(null);
@@ -102,7 +123,11 @@ public class OrderServiceImpl implements OrderService {
             OrderContext context = new OrderContext(order);
             context.handleStateChange(order);
 
-            OrderDTO orderDTO = modelMapper.map(orderRepository.save(order), OrderDTO.class);
+            Order savedOrder = orderRepository.save(order);
+            OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
+
+            // Cập nhật cache Redis
+            orderRedis.save(orderDTO);
 
             PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(orderId).getBody().getData();
 
@@ -113,6 +138,7 @@ public class OrderServiceImpl implements OrderService {
         }
         return null;
     }
+
 
     //* Pre Authorized: ADMINISTRATOR, EMPLOYEE
     @Override
@@ -132,10 +158,29 @@ public class OrderServiceImpl implements OrderService {
                     throw new OrderException("No captures found for this order. Refund cannot be processed.", HttpStatus.BAD_REQUEST);
                 }
             }
-            return modelMapper.map(orderRepository.save(order), OrderDTO.class);
+            OrderDTO savedOrderDTO = modelMapper.map(orderRepository.save(order), OrderDTO.class);
+            orderRedis.save(savedOrderDTO);
+            return savedOrderDTO;
         }
         return null;
     }
+
+    @Override
+    public List<OrderResponseDto> getAllOrders(Long userId, int page, int size) {
+        Page<Order> orderPage = orderRepository.findByUserId(userId, PageRequest.of(page, size));
+        return orderPage.stream().map(order -> {
+            // Lấy đơn hàng từ cache nếu có
+            OrderDTO cachedOrder = orderRedis.findByOrderId(order.getOrderId());
+            OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+            if (cachedOrder == null) {
+                // Nếu không có trong cache, lưu vào cache
+                orderRedis.save(orderDTO);
+            }
+            PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(order.getOrderId()).getBody().getData();
+            return new OrderResponseDto(orderDTO, paymentDto);
+        }).collect(Collectors.toList());
+    }
+
 
     private OrderEvent createOrderEvent(Order createdOrder, String paymentMethod, String email) {
         OrderDTO createdOrderDto = modelMapper.map(createdOrder, OrderDTO.class);

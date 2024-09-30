@@ -28,6 +28,8 @@ public class OrderController {
         this.authenticationAPIClient = authenticationAPIClient;
     }
 
+
+
     /**
      * Endpoint to place a new order
      * @param order: Order request DTO containing order details
@@ -107,6 +109,22 @@ public class OrderController {
             return new ResponseEntity<>(new ApiResponse<>("Order not found!", HttpStatus.NOT_FOUND.value()), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             // Handle general exceptions
+            return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<?>> getOrders(HttpServletRequest request, @RequestParam(defaultValue = "0") int page,
+                                                    @RequestParam(defaultValue = "10") int size) {
+        try {
+            // Extract cookie from the request header
+            String cookie = request.getHeader(HttpHeaders.COOKIE);
+
+            // Send cookie in Feign request to authenticate user
+            ApiResponse<UserDto> user = authenticationAPIClient.getCurrentUser(cookie).getBody();
+
+            return new ResponseEntity<>(new ApiResponse<>(orderService.getAllOrders(user.getData().getId(), page, size), HttpStatus.OK.value()), HttpStatus.OK);
+        } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

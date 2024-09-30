@@ -26,9 +26,6 @@ public class Order extends AbstractEntity {
     private List<OrderItem> orderItems;
 
     private Long userId;
-
-    @Nullable
-    private String captureId;
 }
 
 
