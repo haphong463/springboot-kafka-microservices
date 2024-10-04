@@ -48,17 +48,23 @@ public class AuthServiceImpl implements AuthService {
             userCredential.setEmail(signUpRequest.getEmail());
             userCredential.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
             Set<Role> roles = new HashSet<>();
-            for (String roleName : signUpRequest.getRoles()) {
-                ERole eRole;
-                try {
-                    eRole = ERole.valueOf(roleName.toUpperCase());  // Chuyển vai trò sang chữ in hoa
-                } catch (IllegalArgumentException e) {
-                    throw new RuntimeException("Invalid role name: " + roleName);
-                }
-
-                Role role = roleRepository.findByName(eRole)
+            if(signUpRequest.getRoles() == null){
+                Role role = roleRepository.findByName(ERole.CUSTOMER)
                         .orElseThrow(() -> new RuntimeException("Role not found"));
                 roles.add(role);
+            }else{
+                for (String roleName : signUpRequest.getRoles()) {
+                    ERole eRole;
+                    try {
+                        eRole = ERole.valueOf(roleName.toUpperCase());  // Chuyển vai trò sang chữ in hoa
+                    } catch (IllegalArgumentException e) {
+                        throw new RuntimeException("Invalid role name: " + roleName);
+                    }
+
+                    Role role = roleRepository.findByName(eRole)
+                            .orElseThrow(() -> new RuntimeException("Role not found"));
+                    roles.add(role);
+                }
             }
             userCredential.setRoles(roles);
             userCredentialRepository.save(userCredential);
