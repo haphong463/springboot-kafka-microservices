@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -120,7 +121,7 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public List<ProductStockResponse> getProductList(int page, int size) {
+    public Page<ProductStockResponse> getProductList(int page, int size) {
         Page<Product> productPage = productRepository.findAll(PageRequest.of(page, size));
 
         List<ProductResponseDto> productDtos = productPage.getContent()
@@ -140,15 +141,17 @@ public class ProductServiceImpl implements ProductService {
 
         List<StockResponseDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
 
-        return productDtos.stream()
+        List<ProductStockResponse> productStockResponses = productDtos.stream()
                 .map(productDto -> {
                     StockResponseDto stock = stockList.stream()
                             .filter(s -> s.getProductId().equals(productDto.getId()))
                             .findFirst()
                             .orElse(new StockResponseDto());
-                    return buildProductStockResponse(productDto, stock);
+                    return new ProductStockResponse(productDto, stock);
                 })
                 .collect(Collectors.toList());
+        return new PageImpl<>(productStockResponses, PageRequest.of(page, size), productPage.getTotalElements());
+
     }
 
     @Override

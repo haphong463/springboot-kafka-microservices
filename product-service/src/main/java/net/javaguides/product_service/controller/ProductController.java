@@ -11,6 +11,7 @@ import net.javaguides.product_service.dto.ProductStockResponse;
 import net.javaguides.product_service.dto.ProductUpdateDto;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,8 +42,8 @@ public class ProductController {
                                                             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-            List<ProductStockResponse> productList = productService.getProductList(page, size);
-            ApiResponse<List<ProductStockResponse>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
+            Page<ProductStockResponse> productList = productService.getProductList(page, size);
+            ApiResponse<Page<ProductStockResponse>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
