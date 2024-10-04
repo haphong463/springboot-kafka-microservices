@@ -6,6 +6,7 @@ import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.payment_service.dto.PaymentDto;
 import net.javaguides.payment_service.entity.Payment;
 import net.javaguides.payment_service.entity.PaymentStatus;
+import net.javaguides.payment_service.redis.PaymentRedis;
 import net.javaguides.payment_service.repository.PaymentRepository;
 import net.javaguides.payment_service.service.PaymentService;
 import org.modelmapper.ModelMapper;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ModelMapper modelMapper;
+    private final PaymentRedis paymentRedis;
 
 
     @Override
@@ -37,15 +39,21 @@ public class PaymentServiceImpl implements PaymentService {
         newPayment.setPaymentMethod(orderEvent.getPaymentMethod());
         newPayment.setOrderId(orderEvent.getOrderDTO().getOrderId());
         newPayment.setStatus(PaymentStatus.PENDING);
-
+        paymentRedis.save(newPayment);
         paymentRepository.save(newPayment);
     }
 
     @Override
     public PaymentDto getPaymentByOrderId(String orderId) {
+        Payment cachePayment = paymentRedis.findByOrderId(orderId);
+
+        if(cachePayment != null){
+            return modelMapper.map(cachePayment, PaymentDto.class);
+        }
+
         Payment existingPayment = paymentRepository.findByOrderId(orderId);
         if(existingPayment != null){
-
+            paymentRedis.save(existingPayment);
             return modelMapper.map(existingPayment, PaymentDto.class);
         }
         return null;
@@ -58,6 +66,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment existingPayment = paymentRepository.findByOrderId(orderId);
         if(existingPayment != null){
             existingPayment.setStatus(status);
+            paymentRedis.save(existingPayment);
             paymentRepository.save(existingPayment);
         }
         System.out.println("Khong tim thay payment!");
