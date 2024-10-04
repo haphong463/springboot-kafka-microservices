@@ -8,10 +8,7 @@ import net.javaguides.common_lib.dto.order.OrderDTO;
 import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.common_lib.dto.product.ProductDTO;
-import net.javaguides.order_service.dto.OrderRequestDto;
-import net.javaguides.order_service.dto.OrderResponseDto;
-import net.javaguides.order_service.dto.PaymentDto;
-import net.javaguides.order_service.dto.StockDto;
+import net.javaguides.order_service.dto.*;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;
 import net.javaguides.order_service.entity.OrderStatus;
@@ -166,18 +163,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderResponseDto> getAllOrders(Long userId, int page, int size) {
+    public List<OrderResponseDtoWithOutOrderItems> getAllOrders(Long userId, int page, int size) {
         Page<Order> orderPage = orderRepository.findByUserId(userId, PageRequest.of(page, size));
         return orderPage.stream().map(order -> {
             // Lấy đơn hàng từ cache nếu có
             OrderDTO cachedOrder = orderRedis.findByOrderId(order.getOrderId());
-            OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+            OrderWithOutOrderItems orderDTO = modelMapper.map(order, OrderWithOutOrderItems.class);
             if (cachedOrder == null) {
                 // Nếu không có trong cache, lưu vào cache
-                orderRedis.save(orderDTO);
+                orderRedis.save(modelMapper.map(order, OrderDTO.class));
             }
             PaymentDto paymentDto = paymentAPIClient.getPaymentByOrderId(order.getOrderId()).getBody().getData();
-            return new OrderResponseDto(orderDTO, paymentDto);
+            return new OrderResponseDtoWithOutOrderItems(orderDTO, paymentDto);
         }).collect(Collectors.toList());
     }
 
