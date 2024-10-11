@@ -9,6 +9,9 @@ import net.javaguides.common_lib.dto.order.OrderEvent;
 import net.javaguides.common_lib.dto.order.OrderItemDTO;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.order_service.dto.*;
+import net.javaguides.order_service.dto.attribute_value.AttributeValueResponseDto;
+import net.javaguides.order_service.dto.product.ProductResponseDto;
+import net.javaguides.order_service.dto.product_variant.ProductVariantResponseDto;
 import net.javaguides.order_service.entity.Order;
 import net.javaguides.order_service.entity.OrderItem;
 import net.javaguides.order_service.entity.OrderStatus;
@@ -20,7 +23,7 @@ import net.javaguides.order_service.repository.OrderRepository;
 import net.javaguides.order_service.service.OrderService;
 import net.javaguides.order_service.service.PaymentAPIClient;
 import net.javaguides.order_service.service.ProductAPIClient;
-import net.javaguides.order_service.service.StockAPIClient;
+
 import net.javaguides.order_service.service.state.OrderContext;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -33,8 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,7 +50,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderProducer orderProducer;
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
-    private final StockAPIClient stockAPIClient;
     private final ProductAPIClient productAPIClient;
     private final PaymentAPIClient paymentAPIClient;
     private final PayPalService payPalService;
@@ -197,46 +201,58 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-    private void validateStockAndPrice(OrderRequestDto orderRequestDto, OrderDTO newOrder) {
-        Set<String> productIds = orderRequestDto.getOrderItems()
-                .stream()
+    private void validateStockAndPrice(OrderRequestDto orderRequestDTO, OrderDTO newOrder) {
+        Set<String> productIds = extractProductIds(orderRequestDTO.getOrderItems());
+        List<ProductResponseDto> products = fetchProducts(productIds);
+
+        if (products.size() != productIds.size()) {
+            throw new OrderException("Variants not found for ids: " + productIds, HttpStatus.BAD_REQUEST);
+        }
+
+        Map<String, ProductResponseDto> productsMap = products.stream()
+                .collect(Collectors.toMap(ProductResponseDto::getId, Function.identity()));
+
+        for (OrderItemDTO orderItem : orderRequestDTO.getOrderItems()) {
+            ProductResponseDto product = productsMap.get(orderItem.getProductId());
+            if (product == null) {
+                throw new OrderException("Not found product!", HttpStatus.NOT_FOUND);
+            }
+
+            //* UPDATE PRICE AND VALIDATE STOCK
+            updatePriceAndValidateStock(orderItem, product);
+        }
+    }
+
+    private Set<String> extractProductIds(List<OrderItemDTO> orderItems) {
+        return orderItems.stream()
                 .map(OrderItemDTO::getProductId)
                 .collect(Collectors.toSet());
+    }
 
-        List<StockDto> stockDtos = stockAPIClient.getProductsStock(productIds).getBody();
-        ApiResponse<List<ProductDTO>> productDTOs = productAPIClient.getProductsByIds(productIds).getBody();
+    private List<ProductResponseDto> fetchProducts(Set<String> productIds) {
+        return productAPIClient.getProductsByIds(productIds).getBody().getData();
+    }
 
-        for (OrderItemDTO orderItemDTO : orderRequestDto.getOrderItems()) {
-            ProductDTO productDTO = getProductDTO(productDTOs, orderItemDTO.getProductId());
-            StockDto stockDto = getStockDTO(stockDtos, orderItemDTO.getProductId());
-
-            checkStockAvailability(orderItemDTO, stockDto);
-
-            orderItemDTO.setPrice(productDTO.getPrice());
+    private void updatePriceAndValidateStock(OrderItemDTO orderItem, ProductResponseDto product) {
+        ProductVariantResponseDto selectedVariant = findMatchingVariant(product.getVariants(), orderItem.getVariantId());
+        if (selectedVariant != null) {
+            if (selectedVariant.getStockQuantity() < orderItem.getQuantity()) {
+                throw new OrderException("Insufficient stock for variantId: " + selectedVariant.getId(), HttpStatus.BAD_REQUEST);
+            }
+            if(selectedVariant.getPrice() != null){
+                orderItem.setPrice(selectedVariant.getPrice());
+                return;
+            }
+            orderItem.setPrice(product.getPrice());
         }
     }
 
-    private ProductDTO getProductDTO(ApiResponse<List<ProductDTO>> productDTOs, String productId) {
-        assert productDTOs != null;
-        return productDTOs.getData().stream()
-                .filter(product -> product.getId().equals(productId))
+    private ProductVariantResponseDto findMatchingVariant(List<ProductVariantResponseDto> variants, Long variantId) {
+        if (variants == null) return null;
+        return variants.stream()
+                .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new OrderException("Product not found for ID: " + productId, HttpStatus.BAD_REQUEST));
-    }
-
-    private StockDto getStockDTO(List<StockDto> stockDtos, String productId) {
-        return stockDtos.stream()
-                .filter(stock -> stock.getProductId().equals(productId))
-                .findFirst()
-                .orElseThrow(() -> new OrderException("Stock information not found for product: " + productId, HttpStatus.BAD_REQUEST));
-    }
-
-    private void checkStockAvailability(OrderItemDTO orderItemDTO, StockDto stockDto) {
-        if (stockDto.getQty() < orderItemDTO.getQuantity()) {
-            String errorMessage = String.format("Product %s is out of stock or insufficient quantity.", orderItemDTO.getProductId());
-            LOGGER.error(errorMessage);
-            throw new OrderException(errorMessage, HttpStatus.BAD_REQUEST);
-        }
+                .orElse(null);
     }
 
     private Order saveOrder(OrderDTO newOrder, OrderRequestDto orderRequestDto) {

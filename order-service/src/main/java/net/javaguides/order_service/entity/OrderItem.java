@@ -26,5 +26,7 @@ public class OrderItem {
 
     private BigDecimal price;
 
+    private String variantId;
+
 
 }
