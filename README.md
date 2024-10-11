@@ -1,56 +1,63 @@
-![image](https://github.com/user-attachments/assets/e56d8eb1-0fd1-4999-8597-b2100f93b712)
-
 # E-commerce Backend Microservices Project (Dockerized) 🚀
 
 ## Introduction 🌟
 
-Welcome to the **E-commerce Backend Microservices Project**! This project uses a microservices architecture to provide a scalable and maintainable e-commerce platform. Utilizing Docker and Docker Compose, developers can easily set up and manage the entire backend ecosystem, including services such as API Gateway, Service Registry (Eureka Server), Product, Order, Stock, Identity, and Payment. Modern technologies like Kafka for messaging, Open Feign for inter-service communication, and MySQL for data storage create a powerful and efficient system.
+Welcome to the **E-commerce Backend Microservices Project**! This project utilizes a microservices architecture to provide a flexible and maintainable e-commerce platform. By using Docker and Docker Compose, developers can easily set up and manage the entire backend ecosystem, including services such as API Gateway, Service Registry (Eureka Server), Product, Order, Email, Identity, and Payment. Modern technologies like Kafka for messaging, OpenFeign for inter-service communication, Redis for temporary data storage, Zipkin for tracing, and MySQL for data storage create a powerful and efficient system.
 
 ## Microservices Architecture 🛠️
 
-The project is divided into several interconnected microservices, each handling specific business functions. Here's an overview of each service:
+The project is divided into several interconnected microservices, each handling specific business functions. Below is an overview of each service:
 
 ### 1. API Gateway 🌐
+
 - **Description**: The single entry point for all client requests, routing them to the appropriate microservices.
 - **Technology**: Spring Cloud Gateway
 - **Features**: Security handling, routing, load balancing, and rate limiting.
 
 ### 2. Service Registry 📜
-- **Description**: Supports the dynamic discovery and registration of microservices within the ecosystem.
+
+- **Description**: Supports dynamic discovery and registration of microservices within the ecosystem.
 - **Technology**: Eureka Server (Spring Cloud Netflix)
 - **Features**: Service discovery, registration management, and health monitoring.
 
 ### 3. Product Service 🛒
+
 - **Description**: Manages the product catalog, including product details and inventory.
-- **Technology**: Spring Boot, MySQL
-- **Features**: CRUD operations for product data, inventory management.
+- **Technology**: Spring Boot, MySQL, Redis
+- **Features**: CRUD operations for product data, inventory management, product caching.
 
 ### 4. Order Service 🧾
-- **Description**: Oversees order processing, tracking, and history for users.
-- **Technology**: Spring Boot, MySQL
-- **Features**: Order creation, processing, status tracking, and history management.
 
-### 5. Stock Service 📦
-- **Description**: Manages inventory levels and adjusts stock for products.
+- **Description**: Oversees order processing, tracking, and history for users.
+- **Technology**: Spring Boot, MySQL, Zipkin
+- **Features**: Order creation, processing, status tracking, history management, tracing.
+
+### 5. Email Service 📧
+
+- **Description**: Manages sending email notifications for order confirmations, password resets, and other user communications.
 - **Technology**: Spring Boot, MySQL
-- **Features**: Inventory tracking, updates, and automatic restocking triggers.
+- **Features**: Sending emails, email templates, email scheduling, and delivery status tracking.
 
 ### 6. Identity Service 🧑‍💻
+
 - **Description**: Handles user authentication, authorization, and identity management.
-- **Technology**: Spring Boot, MySQL
-- **Features**: User registration, login, role management, and authentication tokens.
+- **Technology**: Spring Boot, MySQL, Redis
+- **Features**: User registration, login, role management, authentication tokens, session storage.
 
 ### 7. Payment Service 💳
+
 - **Description**: Manages payment processing, transactions, and invoices.
-- **Technology**: Spring Boot, MySQL
-- **Features**: Payment processing, transaction history, and invoice management.
+- **Technology**: Spring Boot, MySQL, Zipkin
+- **Features**: Payment processing, transaction history, invoice management, tracing.
 
 ## Technologies Used 🔧
 
 - **Spring Boot**: The main framework for developing microservices.
 - **Apache Kafka**: Supports inter-service communication via asynchronous messaging.
-- **Open Feign**: Simplifies HTTP calls between microservices with declarative REST clients.
+- **OpenFeign**: Simplifies HTTP calls between microservices with declarative REST clients.
 - **MySQL**: Relational database management system for storing service-specific data.
+- **Redis**: Temporary data storage and caching for high performance.
+- **Zipkin**: Distributed tracing tool for monitoring and debugging microservices.
 - **Spring Cloud**: Provides tools for managing a distributed system (Eureka, Gateway, etc.).
 - **Docker**: Containerizes each microservice to ensure consistent and isolated environments.
 - **Docker Compose**: Coordinates multi-container Docker applications, managing service dependencies and networking.
@@ -64,7 +71,7 @@ Ensure you have the following installed on your development machine:
 - **Docker**: [Install Docker](https://docs.docker.com/get-docker/)
 - **Docker Compose**: [Install Docker Compose](https://docs.docker.com/compose/install/)
 - **Git**: To clone the repository.
-- **Web Browser**: To access the service dashboard and APIs.
+- **Web Browser**: To access service dashboards and APIs.
 
 ### 🚀 **Clone Repository**
 
@@ -73,17 +80,17 @@ git clone https://github.com/haphong463/springboot-kafka-microservices.git
 cd springboot-kafka-microservices
 ```
 
-### 🐳 Run Microservices With Docker Compose
+### 🐳 Run Microservices with Docker Compose
 
 The project uses Docker Compose to manage all microservices and their dependencies. Follow these steps to boot up the system:
 
-#### Ensure Docker and Docker Compose Are Running
+#### Ensure Docker and Docker Compose are Running
 
-Ensure Docker Desktop (or Docker Engine) is running on your machine.
+Make sure Docker Desktop (or Docker Engine) is running on your machine.
 
 #### Build and Start All Services
 
-From the project root directory, execute:
+From the project's root directory, execute:
 
 ```bash
 docker-compose up -d
@@ -92,7 +99,7 @@ docker-compose up -d
 **Flag:**
 - `-d`: Run containers in detached mode.
 
-#### Check All Services Are Running
+#### Check All Services are Running
 
 Check the status of all running containers:
 
@@ -108,17 +115,18 @@ docker-compose ps
 api-gateway            java -jar /app.jar            Up      0.0.0.0:9191->9191/tcp
 eureka-server          java -jar /app.jar            Up      0.0.0.0:8761->8761/tcp
 identity-service       java -jar /app.jar            Up      0.0.0.0:9898->9898/tcp
-kafka                  /etc/confluent/docker/run   Up      0.0.0.0:9092->9092/tcp, 0.0.0.0:29092->29092/tcp
+kafka                  /etc/confluent/docker/run     Up      0.0.0.0:9092->9092/tcp, 0.0.0.0:29092->29092/tcp
 mysql-order-service    docker-entrypoint.sh mysqld   Up      0.0.0.0:3307->3306/tcp
 mysql-identity-service docker-entrypoint.sh mysqld   Up      0.0.0.0:3308->3306/tcp
 mysql-payment-service  docker-entrypoint.sh mysqld   Up      0.0.0.0:3309->3306/tcp
 mysql-product-service  docker-entrypoint.sh mysqld   Up      0.0.0.0:3310->3306/tcp
-mysql-stock-service    docker-entrypoint.sh mysqld   Up      0.0.0.0:3311->3306/tcp
+redis                  docker-entrypoint.sh redis    Up      0.0.0.0:6379->6379/tcp
+zipkin                 start-zipkin                  Up      0.0.0.0:9411->9411/tcp
 order-service          java -jar /app.jar            Up      0.0.0.0:8080->8080/tcp
 payment-service        java -jar /app.jar            Up      0.0.0.0:8085->8085/tcp
 product-service        java -jar /app.jar            Up      0.0.0.0:8084->8084/tcp
-stock-service          java -jar /app.jar            Up      0.0.0.0:8081->8081/tcp
-zookeeper              /etc/confluent/docker/run   Up      0.0.0.0:2181->2181/tcp
+email-service          java -jar /app.jar            Up      0.0.0.0:8081->8081/tcp
+zookeeper              /etc/confluent/docker/run     Up      0.0.0.0:2181->2181/tcp
 ```
 
 ### 🛠️ Service Configuration
@@ -135,6 +143,7 @@ order-service:
     - kafka
     - mysql-order-service
     - eureka-server
+    - zipkin
   ports:
     - "8080:8080"
   environment:
@@ -143,6 +152,7 @@ order-service:
     SPRING_DATASOURCE_PASSWORD: root
     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    SPRING_ZIPKIN_BASE_URL: http://zipkin:9411/
     SPRING_PROFILES_ACTIVE: docker
   networks:
     - shop-network
@@ -151,6 +161,7 @@ order-service:
 - **SPRING_DATASOURCE_URL**: Connects to the `mysql-order-service` database.
 - **SPRING_KAFKA_BOOTSTRAP_SERVERS**: Specifies the Kafka broker within Docker.
 - **EUREKA_CLIENT_SERVICEURL_DEFAULTZONE**: Registers with the Eureka Server.
+- **SPRING_ZIPKIN_BASE_URL**: Configures Zipkin for tracing.
 
 ## API Endpoints and Testing 🔍
 
@@ -158,23 +169,26 @@ order-service:
 
 - **Eureka Server Dashboard**: [http://localhost:8761](http://localhost:8761)
   - Monitor registered services and their statuses.
-  
+
 - **API Gateway**: [http://localhost:9191](http://localhost:9191)
   - The entry point for all API requests.
-  
+
+- **Zipkin Tracing UI**: [http://localhost:9411](http://localhost:9411)
+  - Interface for monitoring and analyzing service tracing.
+
 - **Order Service**: [http://localhost:8080](http://localhost:8080)
 
 - **Payment Service**: [http://localhost:8085](http://localhost:8085)
 
 - **Product Service**: [http://localhost:8084](http://localhost:8084)
 
-- **Stock Service**: [http://localhost:8081](http://localhost:8081)
+- **Email Service**: [http://localhost:8081](http://localhost:8081)
 
 - **Identity Service**: [http://localhost:9898](http://localhost:9898)
 
 ### 🛠️ Testing APIs
 
-Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are examples of how to perform basic operations, considering the role-based access for each operation and using cookies for authentication:
+Use tools like Postman, Insomnia, or cURL to interact with the APIs. Below are examples of how to perform basic operations, considering the required role for each operation and using cookies for authentication:
 
 ### 🛠️ User Registration and Authentication
 
@@ -182,7 +196,7 @@ Below are the steps and examples for registering a new user and obtaining authen
 
 #### 🔐 User Registration
 
-To register a new user, provide their name, password, email, and roles. Roles should be specified as an array, and can include roles like `CUSTOMER`, `EMPLOYEE`, etc.
+To register a new user, provide their name, password, email, and roles. Roles should be specified as an array and can include roles like `CUSTOMER`, `EMPLOYEE`, etc.
 
 **Endpoint**: `POST http://localhost:9191/api/v1/auth/register`
 
@@ -213,9 +227,6 @@ curl -X POST http://localhost:9191/api/v1/auth/token \
 ```
 
 Use the session cookie stored in `cookies.txt` for subsequent requests that require authentication. This setup ensures secure handling of user sessions and simplifies credential management across multiple requests.
-
-These additions outline the processes of user registration and login, guiding users on how to interact with your e-commerce platform's authentication system. Let me know if you'd like further enhancements or additional details!
-
 
 #### 📦 Example of Product Service
 
@@ -249,7 +260,7 @@ curl -X POST http://localhost:9191/api/v1/order \
      -d '{
             "orderItems": [
                 {
-                    "productId": 02f6f017-816d-419f-a680-26f814be70e5
+                    "productId": "02f6f017-816d-419f-a680-26f814be70e5",
                     "quantity": 1
                 }
             ],
@@ -257,15 +268,13 @@ curl -X POST http://localhost:9191/api/v1/order \
          }'
 ```
 
-This modification ensures that the authentication method reflects the use of cookies as per your application's configuration. If there are more details to adjust or add, feel free to tell me!
-
 ## Database Management 🗃️
 
 Each microservice has a separate MySQL database to ensure data isolation and integrity. Here's how you can manage them:
 
 ### 🐳 Accessing MySQL Databases via Docker
 
-#### From Server Using MySQL Client
+#### From Host Using MySQL Client
 
 You can connect to any MySQL database using the host ports mapped in `docker-compose.yml`.
 
@@ -361,7 +370,7 @@ exit
 - **Issue**: `java.lang.IllegalArgumentException: requirement failed: Each listener must have a different port`
 - **Solution**:
   - Update `KAFKA_ADVERTISED_LISTENERS` to use different ports for each listener in `docker-compose.yml`.
-  
+
   **Example:**
 
   ```yaml
@@ -373,14 +382,13 @@ exit
 - **Issue**: Service "mysql-product-service" refers to undefined volume `mysql-product-service-data`
 - **Solution**:
   - Define all necessary volumes in the `volumes` section of `docker-compose.yml`.
-  
+
   ```yaml
   volumes:
     mysql-order-service-data:
     mysql-identity-service-data:
     mysql-payment-service-data:
     mysql-product-service-data:
-    mysql-stock-service-data:
   ```
 
 #### Service Not Starting
@@ -388,7 +396,7 @@ exit
 - **Issue**: Service containers crashing or not starting.
 - **Solution**:
   - Check logs of the specific service:
-  
+
     ```bash
     docker-compose logs -f <service-name>
     ```
@@ -400,7 +408,7 @@ exit
 - **Issue**: Host ports being used by another service.
 - **Solution**:
   - Change host port mappings in `docker-compose.yml` to unused ports.
-  
+
   **Example:**
 
   ```yaml
@@ -441,6 +449,8 @@ docker-compose up -d --build order-service
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)
 - [Spring Cloud Documentation](https://spring.io/projects/spring-cloud)
 - [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
+- [Redis Documentation](https://redis.io/documentation)
+- [Zipkin Documentation](https://zipkin.io/pages/documentation.html)
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Eureka Server Documentation](https://cloud.spring.io/spring-cloud-netflix/multi/multi__service_discovery_eureka_clients.html)
