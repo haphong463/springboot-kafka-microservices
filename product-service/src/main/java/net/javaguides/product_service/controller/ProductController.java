@@ -6,9 +6,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
-import net.javaguides.product_service.dto.CreateProductRequestDto;
+import net.javaguides.product_service.dto.product.CreateProductRequestDto;
 import net.javaguides.product_service.dto.ProductStockResponse;
-import net.javaguides.product_service.dto.ProductUpdateDto;
+import net.javaguides.product_service.dto.product.ProductResponseDto;
+import net.javaguides.product_service.dto.product.UpdateProductRequestDto;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.data.domain.Page;
@@ -28,8 +29,8 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ApiResponse<?>> saveProduct(@ModelAttribute @Valid CreateProductRequestDto createProductRequestDto) {
         try {
-            ProductStockResponse createdProductDto = productService.saveProduct(createProductRequestDto);
-            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
+            ProductResponseDto createdProductDto = productService.saveProduct(createProductRequestDto);
+            ApiResponse<ProductResponseDto> apiResponse = new ApiResponse<>(createdProductDto, HttpStatus.CREATED.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -42,8 +43,8 @@ public class ProductController {
                                                             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-            Page<ProductStockResponse> productList = productService.getProductList(page, size);
-            ApiResponse<Page<ProductStockResponse>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
+            Page<ProductResponseDto> productList = productService.getProductList(page, size);
+            ApiResponse<Page<ProductResponseDto>> apiResponse = new ApiResponse<>(productList, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -54,8 +55,8 @@ public class ProductController {
     @GetMapping("{id}")
     public ResponseEntity<ApiResponse<?>> getProductById(@PathVariable("id") String id) {
         try {
-            ProductStockResponse productStockResponse = productService.getProductById(id);
-            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
+            ProductResponseDto productStockResponse = productService.getProductById(id);
+            ApiResponse<ProductResponseDto> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (ProductException e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), e.getStatus().value());
@@ -67,10 +68,10 @@ public class ProductController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody ProductUpdateDto productDTO, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
+    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable("id") String id, @RequestBody UpdateProductRequestDto productDTO, @RequestHeader(HttpHeaders.IF_MATCH) int version) {
         try {
-            ProductStockResponse productStockResponse = productService.updateProduct(id, productDTO, version);
-            ApiResponse<ProductStockResponse> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
+            ProductResponseDto productStockResponse = productService.updateProduct(id, productDTO, version);
+            ApiResponse<ProductResponseDto> apiResponse = new ApiResponse<>(productStockResponse, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         }
         catch(OptimisticLockException e){
@@ -86,12 +87,8 @@ public class ProductController {
     @DeleteMapping("{id}")
     public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable("id") String id) {
         try {
-            ProductDTO productDTO = productService.deleteProduct(id);
-            if (productDTO != null) {
-                return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
-            }
-            ApiResponse<String> response = new ApiResponse<>("Product not found with ID: " + id, HttpStatus.NOT_FOUND.value());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            productService.deleteProduct(id);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         catch (ProductException e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), e.getStatus().value());
@@ -106,8 +103,8 @@ public class ProductController {
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<?>> getProductsByIds(@RequestParam("ids") Set<String> productIds) {
         try {
-            List<ProductDTO> productDTOs = productService.getProductsByIds(productIds);
-            ApiResponse<List<ProductDTO>> apiResponse = new ApiResponse<>(productDTOs, HttpStatus.OK.value());
+            List<ProductResponseDto> productDTOs = productService.getProductsByIds(productIds);
+            ApiResponse<List<ProductResponseDto>> apiResponse = new ApiResponse<>(productDTOs, HttpStatus.OK.value());
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
         } catch (Exception e) {
             ApiResponse<String> response = new ApiResponse<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());

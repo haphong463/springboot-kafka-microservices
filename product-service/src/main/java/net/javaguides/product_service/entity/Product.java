@@ -1,9 +1,6 @@
 package net.javaguides.product_service.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +8,8 @@ import lombok.Setter;
 import net.javaguides.common_lib.entity.AbstractEntity;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -31,6 +30,12 @@ public class Product extends AbstractEntity {
     @Column(columnDefinition = "LONGTEXT")
     private String imageUrl;
 
-    @Column(nullable = false)
     private BigDecimal price;
+
+    @Column
+    private BigDecimal discount;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductVariant> variants = new ArrayList<>();
+
 }

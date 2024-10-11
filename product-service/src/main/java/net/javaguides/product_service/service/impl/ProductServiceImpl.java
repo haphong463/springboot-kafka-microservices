@@ -1,20 +1,20 @@
 package net.javaguides.product_service.service.impl;
 
-import io.netty.util.concurrent.CompleteFuture;
 import lombok.RequiredArgsConstructor;
-import net.javaguides.common_lib.dto.ApiResponse;
 import net.javaguides.common_lib.dto.product.ProductDTO;
 import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
 import net.javaguides.product_service.dto.*;
+import net.javaguides.product_service.dto.product.CreateProductRequestDto;
+import net.javaguides.product_service.dto.product.ProductResponseDto;
+import net.javaguides.product_service.dto.product.UpdateProductRequestDto;
 import net.javaguides.product_service.redis.ProductRedis;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.exception.ProductException;
-import net.javaguides.product_service.kafka.ProductProducer;
+import net.javaguides.product_service.kafka.producer.ProductProducer;
 import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.CloudinaryService;
 import net.javaguides.product_service.service.ProductService;
-import net.javaguides.product_service.service.StockAPIClient;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +40,6 @@ public class ProductServiceImpl implements ProductService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProductServiceImpl.class);
     private final ProductProducer productProducer;
     private final ProductRepository productRepository;
-    private final StockAPIClient stockAPIClient;
     private final ModelMapper modelMapper;
     private final ProductRedis productDAO;
     private final CloudinaryService cloudinaryService;
@@ -59,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
     }
     @Override
     @Transactional
-    public ProductStockResponse saveProduct(CreateProductRequestDto createProductRequestDto) {
+    public ProductResponseDto saveProduct(CreateProductRequestDto createProductRequestDto) {
         try {
             String publicId = System.currentTimeMillis() + "_" + createProductRequestDto.getMultipartFile().getOriginalFilename().replace(".jpg", "");
             String preUrl = "https://res.cloudinary.com/" + cloudName + "/image/upload/" + publicId + "." + getFileExtension(createProductRequestDto.getMultipartFile());
@@ -74,10 +72,10 @@ public class ProductServiceImpl implements ProductService {
             productDAO.save(savedProduct);
 
             cloudinaryService.uploadFile(createProductRequestDto.getMultipartFile(), publicId);
-
-            ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
-            productProducer.sendMessage(productEvent);
-            return buildProductStockResponse(savedProduct, productDTO.getStockQuantity());
+//
+//            ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
+//            productProducer.sendMessage(productEvent);
+            return modelMapper.map(savedProduct, ProductResponseDto.class);
         } catch (Exception e) {
             throw new ProductException("Failed to create product: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -85,7 +83,7 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public ProductStockResponse getProductById(String id) {
+    public ProductResponseDto getProductById(String id) {
         Product existingProductInCache = getExistingProductInCache(id);
         ProductResponseDto productResponseDto;
 
@@ -104,24 +102,17 @@ public class ProductServiceImpl implements ProductService {
             productResponseDto = modelMapper.map(product, ProductResponseDto.class);
 
             // Store product data in Redis cache
-            insertProductToCache(product);
+//!          insertProductToCache(product);
             // Optionally set a time to live for the cache
         }
 
-        // Always retrieve stock information fresh from the Stock API client
-        ApiResponse<StockResponseDto> stockApiResponse = stockAPIClient.getProductStock(id).getBody();
-
-        // Build the response
-        ProductStockResponse productStockResponse = new ProductStockResponse();
-        productStockResponse.setStock(stockApiResponse.getData());
-        productStockResponse.setProduct(productResponseDto);
-        return productStockResponse;
+        return productResponseDto;
     }
 
 
 
     @Override
-    public Page<ProductStockResponse> getProductList(int page, int size) {
+    public Page<ProductResponseDto> getProductList(int page, int size) {
         Page<Product> productPage = productRepository.findAll(PageRequest.of(page, size));
 
         List<ProductResponseDto> productDtos = productPage.getContent()
@@ -129,33 +120,18 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> {
                     Product productInCache = getExistingProductInCache(product.getId());
                     if(productInCache == null){
-                        productDAO.save(product);
+//!                        productDAO.save(product);
                     }
                     return modelMapper.map(product, ProductResponseDto.class);
                 })
                 .collect(Collectors.toList());
 
-        Set<String> productIds = productDtos.stream()
-                .map(ProductResponseDto::getId)
-                .collect(Collectors.toSet());
-
-        List<StockResponseDto> stockList = stockAPIClient.getProductsStock(productIds).getBody();
-
-        List<ProductStockResponse> productStockResponses = productDtos.stream()
-                .map(productDto -> {
-                    StockResponseDto stock = stockList.stream()
-                            .filter(s -> s.getProductId().equals(productDto.getId()))
-                            .findFirst()
-                            .orElse(new StockResponseDto());
-                    return new ProductStockResponse(productDto, stock);
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(productStockResponses, PageRequest.of(page, size), productPage.getTotalElements());
+        return new PageImpl<>(productDtos, PageRequest.of(page, size), productPage.getTotalElements());
 
     }
 
     @Override
-    public ProductStockResponse updateProduct(String id, ProductUpdateDto productUpdateDto, int version) {
+    public ProductResponseDto updateProduct(String id, UpdateProductRequestDto productUpdateDto, int version) {
         return productRepository.findById(id)
                 .map(existingProduct -> {
                     if (existingProduct.getVersion() != version) {
@@ -169,23 +145,21 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public ProductDTO deleteProduct(String id) {
-        return productRepository.findById(id)
-                .map(product -> {
-                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
-                    ProductEvent productEvent = createProductEvent(productDTO, ProductMethod.DELETE);
-                    productProducer.sendDeleteProductMessage(productEvent);
-                    productRepository.delete(product);
-                    productDAO.deleteByProductId(id);
-                    return productDTO;
-                }).orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
+    public void deleteProduct(String id) {
+        Optional<Product> existingProductOptional = productRepository.findById(id);
+        if(!existingProductOptional.isPresent()){
+            throw new ProductException("Product not found with ID: " + id, HttpStatus.NOT_FOUND);
+        }
+
+        Product existingProduct = existingProductOptional.get();
+        productRepository.delete(existingProduct);
     }
 
     @Override
-    public List<ProductDTO> getProductsByIds(Set<String> productIds) {
+    public List<ProductResponseDto> getProductsByIds(Set<String> productIds) {
         return productRepository.findAllByIdIn(productIds)
                 .stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(product -> modelMapper.map(product, ProductResponseDto.class))
                 .collect(Collectors.toList());
     }
 
@@ -211,31 +185,21 @@ public class ProductServiceImpl implements ProductService {
         return productEvent;
     }
 
-    private ProductStockResponse buildProductStockResponse(Product product, int stockQuantity) {
-        ProductResponseDto productResponseDto = modelMapper.map(product, ProductResponseDto.class);
-        StockResponseDto stockResponseDto = new StockResponseDto(product.getId(), stockQuantity);
 
-        ProductStockResponse productStockResponse = new ProductStockResponse();
-        productStockResponse.setProduct(productResponseDto);
-        productStockResponse.setStock(stockResponseDto);
-        return productStockResponse;
-    }
-
-    private ProductStockResponse buildProductStockResponse(ProductResponseDto productDto, StockResponseDto stockDto) {
+    private ProductStockResponse buildProductStockResponse(ProductResponseDto productDto) {
         ProductStockResponse response = new ProductStockResponse();
         response.setProduct(productDto);
-        response.setStock(stockDto);
         return response;
     }
 
-    private ProductStockResponse updateAndSaveProduct(Product existingProduct, ProductUpdateDto productUpdateDto) {
+    private ProductResponseDto updateAndSaveProduct(Product existingProduct, UpdateProductRequestDto productUpdateDto) {
         modelMapper.map(productUpdateDto, existingProduct);
 
         Product savedProduct = productRepository.save(existingProduct);
         ProductEvent productEvent = createProductEvent(savedProduct, productUpdateDto.getStockQuantity(), ProductMethod.UPDATE);
         productProducer.sendMessage(productEvent);
 
-        return buildProductStockResponse(savedProduct, productUpdateDto.getStockQuantity());
+        return modelMapper.map(savedProduct, ProductResponseDto.class);
     }
 
     private Product getExistingProductInCache(String id) {
