@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductVariantServiceImpl implements ProductVariantService {
-    private final static Logger LOGGER = LoggerFactory.getLogger(ProductVariantServiceImpl.class);
-
     private final ProductVariantRepository productVariantRepository;
 
     private final AttributeRepository attributeRepository;
@@ -41,6 +39,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     private final ModelMapper modelMapper;
 
     @Transactional
+    @Override
     public ProductVariantResponseDto createProductVariant(String productId, Map<String, String> attributes, BigDecimal price, String sku, Integer initialStock, Integer reorderLevel) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -66,6 +65,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         return modelMapper.map(productVariantRepository.save(variant), ProductVariantResponseDto.class);
     }
 
+    @Override
     public List<ProductVariantResponseDto> getVariantsByProductId(String productId) {
         return productVariantRepository.findByProductId(productId)
                 .stream()
@@ -74,6 +74,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     }
 
     @Transactional
+    @Override
     public ProductVariantResponseDto updateProductVariant(Long variantId, UpdateProductVariantRequestDto updateDTO) {
         ProductVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new ProductException("ProductVariant not found", HttpStatus.NOT_FOUND));
@@ -137,6 +138,11 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
         // Cập nhật cache cho sản phẩm
         //! redisService.updateProductCache(product);
+    }
+
+    @Override
+    public void saveProductVariant(ProductVariant productVariant) {
+        productVariantRepository.save(productVariant);
     }
 
     @Override

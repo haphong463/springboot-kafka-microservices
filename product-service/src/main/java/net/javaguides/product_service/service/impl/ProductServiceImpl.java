@@ -15,6 +15,7 @@ import net.javaguides.product_service.kafka.producer.ProductProducer;
 import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.service.CloudinaryService;
 import net.javaguides.product_service.service.ProductService;
+import net.javaguides.product_service.specification.ProductSpecification;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +23,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,18 +68,17 @@ public class ProductServiceImpl implements ProductService {
             String preUrl = "https://res.cloudinary.com/" + cloudName + "/image/upload/" + publicId + "." + getFileExtension(createProductRequestDto.getMultipartFile());
 
             // Map DTO sang Product entity
-            ProductDTO productDTO = modelMapper.map(createProductRequestDto, ProductDTO.class);
-            Product product = mapToEntity(productDTO);
+            Product product = modelMapper.map(createProductRequestDto, Product.class);
             product.setId(UUID.randomUUID().toString());
             product.setImageUrl(preUrl);
             Product savedProduct = productRepository.save(product);
 
+            // Lưu sản phẩm vào cache
             productDAO.save(savedProduct);
 
+            // Upload ảnh lên Cloudinary (nên thực hiện sau khi lưu sản phẩm thành công)
             cloudinaryService.uploadFile(createProductRequestDto.getMultipartFile(), publicId);
-//
-//            ProductEvent productEvent = createProductEvent(savedProduct, productDTO.getStockQuantity(), ProductMethod.CREATE);
-//            productProducer.sendMessage(productEvent);
+
             return modelMapper.map(savedProduct, ProductResponseDto.class);
         } catch (Exception e) {
             throw new ProductException("Failed to create product: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -82,32 +86,25 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+
     @Override
     public ProductResponseDto getProductById(String id) {
-        Product existingProductInCache = getExistingProductInCache(id);
-        ProductResponseDto productResponseDto;
+        Product cachedProduct = productDAO.findByProductId(id);
 
-        if (existingProductInCache != null) {
-            productResponseDto = modelMapper.map(existingProductInCache, ProductResponseDto.class);
-            LOGGER.info("ProductServiceImpl.getProductById(): cache post >> " + existingProductInCache.toString());
+        if (cachedProduct != null) {
+            LOGGER.info("Cache hit for product id: {}", id);
+            return modelMapper.map(cachedProduct, ProductResponseDto.class);
         } else {
+            LOGGER.info("Cache miss for product id: {}", id);
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
 
+            productDAO.save(product);
 
-            // Cache miss, retrieve product from database
-            Optional<Product> productOpt = productRepository.findById(id);
-            if (!productOpt.isPresent()) {
-                throw new ProductException("Not found product!", HttpStatus.NOT_FOUND);
-            }
-            Product product = productOpt.get();
-            productResponseDto = modelMapper.map(product, ProductResponseDto.class);
-
-            // Store product data in Redis cache
-//!          insertProductToCache(product);
-            // Optionally set a time to live for the cache
+            return modelMapper.map(product, ProductResponseDto.class);
         }
-
-        return productResponseDto;
     }
+
 
 
 
@@ -138,22 +135,32 @@ public class ProductServiceImpl implements ProductService {
                         throw new ProductException("Version conflict! Current version: "
                                 + existingProduct.getVersion(), HttpStatus.CONFLICT);
                     }
-                    return updateAndSaveProduct(existingProduct, productUpdateDto);
+
+                    modelMapper.map(productUpdateDto, existingProduct);
+
+                    Product savedProduct = productRepository.save(existingProduct);
+
+                    // Cập nhật sản phẩm trong cache
+                    productDAO.save(savedProduct);
+
+                    return modelMapper.map(savedProduct, ProductResponseDto.class);
                 })
                 .orElseThrow(() -> new ProductException("Product not found with id: " + id, HttpStatus.NOT_FOUND));
     }
 
 
+
     @Override
     public void deleteProduct(String id) {
-        Optional<Product> existingProductOptional = productRepository.findById(id);
-        if(!existingProductOptional.isPresent()){
-            throw new ProductException("Product not found with ID: " + id, HttpStatus.NOT_FOUND);
-        }
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ProductException("Product not found with ID: " + id, HttpStatus.NOT_FOUND));
 
-        Product existingProduct = existingProductOptional.get();
         productRepository.delete(existingProduct);
+
+        // Xóa sản phẩm khỏi cache
+        productDAO.deleteByProductId(id);
     }
+
 
     @Override
     public List<ProductResponseDto> getProductsByIds(Set<String> productIds) {
@@ -162,6 +169,30 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> modelMapper.map(product, ProductResponseDto.class))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Page<ProductResponseDto> searchProducts(String name, String categoryId, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        Specification<Product> spec = Specification.where(null);
+
+        if (name != null && !name.isEmpty()) {
+            spec = spec.and(ProductSpecification.hasName(name));
+        }
+
+        if (categoryId != null && !categoryId.isEmpty()) {
+            spec = spec.and(ProductSpecification.inCategory(categoryId));
+        }
+
+        if (minPrice != null && maxPrice != null) {
+            spec = spec.and(ProductSpecification.hasPriceBetween(minPrice, maxPrice));
+        }
+
+        Page<Product> products = productRepository.findAll(spec, pageable);
+
+        // Sử dụng map() của Page để chuyển đổi từng Product thành ProductResponseDto
+        return products.map(product -> modelMapper.map(product, ProductResponseDto.class));
+    }
+
+
 
     // Private Helper Methods
     private Product mapToEntity(ProductDTO productDTO) {

@@ -13,7 +13,7 @@ public class ProductRedis {
     private static final String HASH_KEY = "Product";
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Product> redisTemplate;
 
     public void save(Product product){
         try {

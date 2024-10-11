@@ -17,4 +17,5 @@ public interface ProductVariantService {
     void deleteProductVariant(Long variantId);
     List<ProductVariant> getProductVariantByIds(Set<Long> variantIds);
     ProductVariant getVariantById(Long variantId);
+    void saveProductVariant(ProductVariant productVariant);
 }

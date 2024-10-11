@@ -13,11 +13,13 @@ import net.javaguides.product_service.dto.product.UpdateProductRequestDto;
 import net.javaguides.product_service.exception.ProductException;
 import net.javaguides.product_service.service.ProductService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -99,6 +101,21 @@ public class ProductController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<ProductResponseDto>>> searchProducts(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            Pageable pageable) {
+
+        Page<ProductResponseDto> products = productService.searchProducts(name, categoryId, minPrice, maxPrice, pageable);
+        ApiResponse<Page<ProductResponseDto>> response = new ApiResponse<>(products, HttpStatus.OK.value());
+        return ResponseEntity.ok(response);
+    }
+
+
 
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<?>> getProductsByIds(@RequestParam("ids") Set<String> productIds) {

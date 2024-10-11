@@ -9,7 +9,9 @@ import net.javaguides.common_lib.entity.AbstractEntity;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -34,6 +36,14 @@ public class Product extends AbstractEntity {
 
     @Column
     private BigDecimal discount;
+
+    @ManyToMany
+    @JoinTable(
+            name = "product_category",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductVariant> variants = new ArrayList<>();
