@@ -9,6 +9,7 @@ import net.javaguides.product_service.entity.AttributeValue;
 import net.javaguides.product_service.entity.Product;
 import net.javaguides.product_service.entity.ProductVariant;
 import net.javaguides.product_service.exception.ProductException;
+import net.javaguides.product_service.redis.ProductRedis;
 import net.javaguides.product_service.repository.AttributeRepository;
 import net.javaguides.product_service.repository.ProductRepository;
 import net.javaguides.product_service.repository.ProductVariantRepository;
@@ -38,6 +39,8 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     private final ModelMapper modelMapper;
 
+    private final ProductRedis productRedis;
+
     @Transactional
     @Override
     public ProductVariantResponseDto createProductVariant(String productId, Map<String, String> attributes, BigDecimal price, String sku, Integer initialStock, Integer reorderLevel) {
@@ -62,7 +65,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
             variant.getAttributeValues().add(attributeValue);
         }
 
-        return modelMapper.map(productVariantRepository.save(variant), ProductVariantResponseDto.class);
+        ProductVariant savedVariant = productVariantRepository.save(variant);
+
+        product.getVariants().add(savedVariant);
+        productRedis.save(product);
+
+        return modelMapper.map(savedVariant, ProductVariantResponseDto.class);
     }
 
     @Override
@@ -114,8 +122,8 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
 
         // Cập nhật cache cho sản phẩm
-      /*!  Product productAfterUpdate = variant.getProduct();
-        !  redisService.updateProductCache(productAfterUpdate); */
+       Product productAfterUpdate = variant.getProduct();
+        productRedis.save(productAfterUpdate);
 
         return modelMapper.map(updatedVariant, ProductVariantResponseDto.class);
     }
@@ -134,10 +142,10 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         productVariantRepository.delete(variant);
 
         // Gọi Stock Service để xóa tồn kho
-        //! stockClient.deleteStock(variantId);
+//        stockClient.deleteStock(variantId);
 
         // Cập nhật cache cho sản phẩm
-        //! redisService.updateProductCache(product);
+        productRedis.save(product);
     }
 
     @Override

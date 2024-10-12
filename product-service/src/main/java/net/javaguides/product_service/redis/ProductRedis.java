@@ -1,7 +1,9 @@
 package net.javaguides.product_service.redis;
 
+import net.javaguides.product_service.dto.product.ProductCacheDto;
 import net.javaguides.product_service.entity.Product;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -13,12 +15,17 @@ public class ProductRedis {
     private static final String HASH_KEY = "Product";
 
     @Autowired
-    private RedisTemplate<String, Product> redisTemplate;
+    private RedisTemplate<String, ProductCacheDto> redisTemplate;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     public void save(Product product){
         try {
             if(product.getImageUrl() != null){
-                redisTemplate.opsForHash().put(HASH_KEY, product.getId(), product);
+                ProductCacheDto productCacheDto = modelMapper.map(product, ProductCacheDto.class);
+
+                redisTemplate.opsForHash().put(HASH_KEY, product.getId(), productCacheDto);
                 redisTemplate.expire(HASH_KEY, Duration.ofHours(1));
             }
         }catch(Exception e){
@@ -26,9 +33,9 @@ public class ProductRedis {
         }
     }
 
-    public Product findByProductId(String id){
+    public ProductCacheDto findByProductId(String id){
         try {
-            return (Product) redisTemplate.opsForHash().get(HASH_KEY, id);
+            return (ProductCacheDto) redisTemplate.opsForHash().get(HASH_KEY, id);
         }catch(Exception e){
             return null;
         }

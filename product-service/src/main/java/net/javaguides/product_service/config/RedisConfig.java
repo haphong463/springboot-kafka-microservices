@@ -1,5 +1,6 @@
 package net.javaguides.product_service.config;
 
+import net.javaguides.product_service.dto.product.ProductCacheDto;
 import net.javaguides.product_service.entity.Product;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -34,16 +35,14 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Product> redisTemplate() {
-        RedisTemplate<String, Product> template = new RedisTemplate<>();
+    public RedisTemplate<String, ProductCacheDto> redisTemplate() {
+        RedisTemplate<String, ProductCacheDto> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory());
         // Thiết lập serializer cho key và value
-        template.setKeySerializer(template.getStringSerializer());
-        template.setHashKeySerializer(template.getStringSerializer());
-
-        // Sử dụng JSON serializer cho value
-        template.setValueSerializer(template.getValueSerializer());
-        template.setHashValueSerializer(template.getValueSerializer());
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer()); // Using JSON serialization
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer()); // Using JSON serialization
 
         template.setEnableTransactionSupport(true);
         template.afterPropertiesSet();

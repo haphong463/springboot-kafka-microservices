@@ -6,6 +6,7 @@ import net.javaguides.common_lib.dto.product.ProductEvent;
 import net.javaguides.common_lib.dto.product.ProductMethod;
 import net.javaguides.product_service.dto.*;
 import net.javaguides.product_service.dto.product.CreateProductRequestDto;
+import net.javaguides.product_service.dto.product.ProductCacheDto;
 import net.javaguides.product_service.dto.product.ProductResponseDto;
 import net.javaguides.product_service.dto.product.UpdateProductRequestDto;
 import net.javaguides.product_service.redis.ProductRedis;
@@ -89,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponseDto getProductById(String id) {
-        Product cachedProduct = productDAO.findByProductId(id);
+        ProductCacheDto cachedProduct = productDAO.findByProductId(id);
 
         if (cachedProduct != null) {
             LOGGER.info("Cache hit for product id: {}", id);
@@ -115,9 +116,10 @@ public class ProductServiceImpl implements ProductService {
         List<ProductResponseDto> productDtos = productPage.getContent()
                 .stream()
                 .map(product -> {
-                    Product productInCache = getExistingProductInCache(product.getId());
-                    if(productInCache == null){
-//!                        productDAO.save(product);
+                    ProductCacheDto cachedProduct = productDAO.findByProductId(product.getId());
+
+                    if(cachedProduct == null){
+                       productDAO.save(product);
                     }
                     return modelMapper.map(product, ProductResponseDto.class);
                 })
@@ -233,9 +235,6 @@ public class ProductServiceImpl implements ProductService {
         return modelMapper.map(savedProduct, ProductResponseDto.class);
     }
 
-    private Product getExistingProductInCache(String id) {
-        return productDAO.findByProductId(id);
-    }
 
     private void insertProductToCache(Product product) {
         productDAO.save(product);
